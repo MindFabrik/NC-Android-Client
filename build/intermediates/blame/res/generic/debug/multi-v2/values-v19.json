@@ -1,0 +1,86 @@
+{
+    "logs": [
+        {
+            "outputFile": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/incremental/mergeGenericDebugResources/merged.dir/values-v19/values-v19.xml",
+            "map": [
+                {
+                    "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/values-v19/bools.xml",
+                    "from": {
+                        "startLines": "19",
+                        "startColumns": "4",
+                        "startOffsets": "735",
+                        "endColumns": "42",
+                        "endOffsets": "773"
+                    },
+                    "to": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "42",
+                        "endOffsets": "93"
+                    }
+                },
+                {
+                    "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/values-v19/styles.xml",
+                    "from": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "56",
+                        "endLines": "12",
+                        "endColumns": "12",
+                        "endOffsets": "669"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "98",
+                        "endLines": "12",
+                        "endColumns": "12",
+                        "endOffsets": "711"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/values-v19/values-v19.xml",
+            "map": [
+                {
+                    "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/values-v19/bools.xml",
+                    "from": {
+                        "startLines": "19",
+                        "startColumns": "4",
+                        "startOffsets": "735",
+                        "endColumns": "42",
+                        "endOffsets": "773"
+                    },
+                    "to": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "42",
+                        "endOffsets": "93"
+                    }
+                },
+                {
+                    "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/values-v19/styles.xml",
+                    "from": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "56",
+                        "endLines": "12",
+                        "endColumns": "12",
+                        "endOffsets": "669"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "98",
+                        "endLines": "12",
+                        "endColumns": "12",
+                        "endOffsets": "711"
+                    }
+                }
+            ]
+        }
+    ]
+}

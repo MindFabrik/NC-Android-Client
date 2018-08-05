@@ -1,0 +1,38 @@
+[
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/menu/contactlist_menu.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/menu/contactlist_menu.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/menu/drawer_menu.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/menu/drawer_menu.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/menu/upload_list_menu.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/menu/upload_list_menu.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/menu/user_info_menu.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/menu/user_info_menu.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/menu/navigation_bar_menu.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/menu/navigation_bar_menu.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/menu/file_actions_menu.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/menu/file_actions_menu.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/menu/upload_files_picker.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/menu/upload_files_picker.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/menu/main_menu.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/menu/main_menu.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/menu/receive_file_menu.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/menu/receive_file_menu.xml"
+    }
+]

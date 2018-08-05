@@ -1,0 +1,38 @@
+[
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-ldpi-v4/ic_show.png",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-ldpi/ic_show.png"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-ldpi-v4/folder_star_32dp.png",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-ldpi/folder_star_32dp.png"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-ldpi-v4/ic_share.png",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-ldpi/ic_share.png"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-ldpi-v4/video_32dp.png",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-ldpi/video_32dp.png"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-ldpi-v4/ic_fingerprint.png",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-ldpi/ic_fingerprint.png"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-ldpi-v4/shared_via_link.png",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-ldpi/shared_via_link.png"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-ldpi-v4/folder_external.png",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-ldpi/folder_external.png"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-ldpi-v4/image_32dp.png",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-ldpi/image_32dp.png"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-ldpi-v4/shared_via_users.png",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-ldpi/shared_via_users.png"
+    }
+]

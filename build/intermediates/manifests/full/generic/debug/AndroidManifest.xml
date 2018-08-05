@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="de.mindfabrik.nextcloud.mfdev"
+    android:versionCode="30039099"
+    android:versionName="3.2.190" >
+
+    <uses-sdk
+        android:minSdkVersion="14"
+        android:targetSdkVersion="26" />
+    <!-- Allows unlocking your device and activating its screen so UI tests can succeed -->
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Allows for storing and retrieving screenshots -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+    <!-- Allows changing locales -->
+    <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" />
+    <!--
+     GET_ACCOUNTS is needed for API <= 22.
+        For API >= 23 results in the addition of CONTACTS group to the list of permissions that may be
+        dynamically disabled or enabled by the user after installation; but it is not important,
+        since GET_ACCOUNTS is an special case, the permission is not really needed to access accounts
+        owned by the app, our use case.
+        See note in http://developer.android.com/intl/es/reference/android/Manifest.permission.html#GET_ACCOUNTS
+    -->
+    <uses-permission
+        android:name="android.permission.GET_ACCOUNTS"
+        android:maxSdkVersion="22" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.WRITE_CONTACTS" />
+    <!--
+ USE_CREDENTIALS, MANAGE_ACCOUNTS and AUTHENTICATE_ACCOUNTS are needed for API <= 22.
+        In API >= 23 they do not exist anymore
+    -->
+    <uses-permission
+        android:name="android.permission.USE_CREDENTIALS"
+        android:maxSdkVersion="22" />
+    <uses-permission
+        android:name="android.permission.MANAGE_ACCOUNTS"
+        android:maxSdkVersion="22" />
+    <uses-permission
+        android:name="android.permission.AUTHENTICATE_ACCOUNTS"
+        android:maxSdkVersion="22" /> <!-- Next permissions are always approved in installation time, the apps needs to do nothing special in runtime -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_SYNC_STATS" />
+    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
+    <uses-permission android:name="android.permission.BROADCAST_STICKY" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" /> <!-- Permissions required for GCM -->
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+
+    <permission
+        android:name="de.mindfabrik.nextcloud.mfdev.permission.C2D_MESSAGE"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="de.mindfabrik.nextcloud.mfdev.permission.C2D_MESSAGE" />
+
+    <application
+        android:name="com.owncloud.android.MainApp"
+        android:allowBackup="false"
+        android:debuggable="true"
+        android:fullBackupContent="@xml/backup_config"
+        android:icon="@mipmap/ic_launcher"
+        android:installLocation="internalOnly"
+        android:label="@string/app_name"
+        android:manageSpaceActivity="com.owncloud.android.ui.activity.ManageSpaceActivity"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:testOnly="true"
+        android:theme="@style/Theme.ownCloud.Toolbar" >
+        <activity
+            android:name="com.owncloud.android.ui.activity.FileDisplayActivity"
+            android:configChanges="orientation|screenSize"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.ownCloud.Toolbar.Drawer" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name="com.owncloud.android.ui.activity.ManageAccountsActivity" />
+        <activity android:name="com.owncloud.android.ui.activity.UserInfoActivity" />
+        <activity android:name="com.owncloud.android.ui.activity.NotificationsActivity" />
+        <activity android:name="com.owncloud.android.ui.activity.ParticipateActivity" />
+        <activity
+            android:name="com.owncloud.android.ui.activity.ActivitiesListActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+        <activity android:name="com.owncloud.android.ui.activity.SyncedFoldersActivity" />
+        <activity android:name="com.owncloud.android.ui.activity.UploadFilesActivity" />
+        <activity
+            android:name="com.owncloud.android.ui.activity.ExternalSiteWebView"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+        <activity
+            android:name="com.owncloud.android.ui.activity.ContactsPreferenceActivity"
+            android:launchMode="singleInstance" />
+        <activity
+            android:name="com.owncloud.android.ui.activity.ReceiveExternalFilesActivity"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.ownCloud.NoActionBar" >
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.owncloud.android.ui.activity.Preferences"
+            android:theme="@style/Theme.ownCloud" >
+        </activity>
+        <activity
+            android:name="com.owncloud.android.ui.preview.PreviewImageActivity"
+            android:theme="@style/Theme.ownCloud.Overlay" />
+        <activity
+            android:name="com.owncloud.android.ui.preview.PreviewVideoActivity"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.ownCloud.Fullscreen" />
+
+        <service
+            android:name="com.owncloud.android.jobs.NContentObserverJob"
+            android:permission="android.permission.BIND_JOB_SERVICE" >
+        </service>
+        <service
+            android:name="com.owncloud.android.authentication.AccountAuthenticatorService"
+            android:exported="true" >
+            <intent-filter android:priority="100" >
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
+        </service>
+        <service
+            android:name="com.owncloud.android.syncadapter.FileSyncService"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.content.SyncAdapter"
+                android:resource="@xml/syncadapter_files" />
+        </service>
+
+        <provider
+            android:name="com.owncloud.android.providers.FileContentProvider"
+            android:authorities="@string/authority"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/sync_string_files"
+            android:syncable="true" />
+        <provider
+            android:name="com.owncloud.android.providers.UsersAndGroupsSearchProvider"
+            android:authorities="@string/users_and_groups_search_authority"
+            android:enabled="true"
+            android:exported="false"
+            android:label="@string/search_users_and_groups_hint" />
+        <provider
+            android:name="com.owncloud.android.providers.DocumentsStorageProvider"
+            android:authorities="@string/document_provider_authority"
+            android:enabled="@bool/atLeastKitKat"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS" >
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider> <!-- new provider used to generate URIs without file:// scheme (forbidden from Android 7) -->
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="@string/file_provider_authority"
+            android:exported="false"
+            android:grantUriPermissions="true" >
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/exposed_filepaths" />
+        </provider>
+        <provider
+            android:name="com.owncloud.android.providers.DiskLruImageCacheFileProvider"
+            android:authorities="@string/image_cache_provider_authority"
+            android:exported="true" >
+        </provider>
+
+        <activity
+            android:name="com.owncloud.android.authentication.AuthenticatorActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.ownCloud.noActionBar.Login" >
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="@string/oauth2_redirect_scheme" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.owncloud.android.workaround.accounts.CREATE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="login"
+                    android:scheme="@string/login_data_own_scheme" />
+            </intent-filter>
+        </activity>
+
+        <service android:name="com.owncloud.android.services.OperationsService" />
+        <service android:name="com.owncloud.android.files.services.FileDownloader" />
+        <service android:name="com.owncloud.android.files.services.FileUploader" />
+        <service android:name="com.owncloud.android.media.MediaService" />
+
+        <activity android:name="com.owncloud.android.ui.activity.PassCodeActivity" />
+        <activity android:name="com.owncloud.android.ui.activity.FingerprintActivity" />
+        <activity android:name="com.owncloud.android.ui.activity.ConflictsResolveActivity" />
+        <activity android:name="com.owncloud.android.ui.activity.GenericExplanationActivity" />
+        <activity android:name="com.owncloud.android.ui.activity.ErrorsWhileCopyingHandlerActivity" />
+        <activity android:name="com.owncloud.android.ui.activity.LogHistoryActivity" />
+        <activity android:name="com.owncloud.android.ui.errorhandling.ErrorShowActivity" />
+        <activity android:name="com.owncloud.android.ui.activity.UploadListActivity" />
+        <activity
+            android:name="com.owncloud.android.ui.activity.WhatsNewActivity"
+            android:theme="@style/Theme.ownCloud.noActionBar.Login" />
+
+        <receiver android:name="com.owncloud.android.files.BootupBroadcastReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <activity
+            android:name="com.owncloud.android.ui.activity.CopyToClipboardActivity"
+            android:icon="@drawable/copy_link"
+            android:label="@string/copy_link" />
+        <activity
+            android:name="com.owncloud.android.ui.activity.FolderPickerActivity"
+            android:label="@string/app_name" />
+        <activity
+            android:name="com.owncloud.android.ui.activity.UploadPathActivity"
+            android:label="@string/app_name" />
+        <activity
+            android:name="com.owncloud.android.ui.activity.ShareActivity"
+            android:exported="false"
+            android:label="@string/share_dialog_title"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.ownCloud.Dialog.NoTitle"
+            android:windowSoftInputMode="adjustResize" >
+            <intent-filter>
+                <action android:name="android.intent.action.SEARCH" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.searchable"
+                android:resource="@xml/users_and_groups_searchable" />
+        </activity>
+        <activity
+            android:name="com.owncloud.android.ui.activity.ManageSpaceActivity"
+            android:label="@string/manage_space_title"
+            android:theme="@style/Theme.ownCloud" />
+
+        <meta-data
+            android:name="android.support.VERSION"
+            android:value="26.1.0" />
+        <!--
+ FirebaseMessagingService performs security checks at runtime,
+             no need for explicit permissions despite exported="true"
+        -->
+        <service
+            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+            android:exported="true" >
+            <intent-filter android:priority="-500" >
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <activity
+            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <receiver
+            android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
+            android:enabled="true"
+            android:exported="false" >
+        </receiver>
+        <receiver
+            android:name="com.google.android.gms.measurement.AppMeasurementInstallReferrerReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.INSTALL_PACKAGES" >
+            <intent-filter>
+                <action android:name="com.android.vending.INSTALL_REFERRER" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name="com.google.android.gms.measurement.AppMeasurementService"
+            android:enabled="true"
+            android:exported="false" />
+        <service
+            android:name="com.google.android.gms.measurement.AppMeasurementJobService"
+            android:enabled="true"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <receiver
+            android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
+            android:exported="true"
+            android:permission="com.google.android.c2dm.permission.SEND" >
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+
+                <category android:name="de.mindfabrik.nextcloud.mfdev" />
+            </intent-filter>
+        </receiver>
+        <!--
+ Internal (not exported) receiver used by the app to start its own exported services
+             without risk of being spoofed.
+        -->
+        <receiver
+            android:name="com.google.firebase.iid.FirebaseInstanceIdInternalReceiver"
+            android:exported="false" />
+        <!--
+ FirebaseInstanceIdService performs security checks at runtime,
+             no need for explicit permissions despite exported="true"
+        -->
+        <service
+            android:name="com.google.firebase.iid.FirebaseInstanceIdService"
+            android:exported="true" >
+            <intent-filter android:priority="-500" >
+                <action android:name="com.google.firebase.INSTANCE_ID_EVENT" />
+            </intent-filter>
+        </service>
+
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="de.mindfabrik.nextcloud.mfdev.firebaseinitprovider"
+            android:exported="false"
+            android:initOrder="100" />
+
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
+        <service
+            android:name="com.evernote.android.job.v21.PlatformJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service
+            android:name="com.evernote.android.job.v14.PlatformAlarmService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service
+            android:name="com.evernote.android.job.v14.PlatformAlarmServiceExact"
+            android:exported="false" />
+
+        <receiver
+            android:name="com.evernote.android.job.v14.PlatformAlarmReceiver"
+            android:exported="false" >
+            <intent-filter>
+
+                <!-- Keep the filter for legacy intents -->
+                <action android:name="com.evernote.android.job.v14.RUN_JOB" />
+                <action android:name="net.vrallev.android.job.v14.RUN_JOB" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name="com.evernote.android.job.JobBootReceiver"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name="com.evernote.android.job.gcm.PlatformGcmService"
+            android:enabled="false"
+            android:exported="true"
+            android:permission="com.google.android.gms.permission.BIND_NETWORK_TASK_SERVICE" >
+            <intent-filter>
+                <action android:name="com.google.android.gms.gcm.ACTION_TASK_READY" />
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.evernote.android.job.JobRescheduleService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <meta-data
+            android:name="android.arch.lifecycle.VERSION"
+            android:value="27.0.0-SNAPSHOT" />
+    </application>
+
+</manifest>

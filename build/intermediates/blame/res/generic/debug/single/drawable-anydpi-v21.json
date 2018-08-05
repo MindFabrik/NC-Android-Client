@@ -1,0 +1,50 @@
+[
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-anydpi-v21/ic_share.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-anydpi-v21/ic_share.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-anydpi-v21/ic_show.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-anydpi-v21/ic_show.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-anydpi-v21/folder_external.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-anydpi-v21/folder_external.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-anydpi-v21/design_ic_visibility_off.xml",
+        "source": "/Users/OliverO/.gradle/caches/transforms-1/files-1.1/design-26.1.0.aar/f34d1a17b68b6d3b27991fd921dbde14/res/drawable-anydpi-v21/design_ic_visibility_off.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-anydpi-v21/arrow_right.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/drawable-anydpi-v21/arrow_right.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-anydpi-v21/video_32dp.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-anydpi-v21/video_32dp.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-anydpi-v21/shared_via_users.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-anydpi-v21/shared_via_users.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-anydpi-v21/image_32dp.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-anydpi-v21/image_32dp.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-anydpi-v21/shared_via_link.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-anydpi-v21/shared_via_link.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-anydpi-v21/design_ic_visibility.xml",
+        "source": "/Users/OliverO/.gradle/caches/transforms-1/files-1.1/design-26.1.0.aar/f34d1a17b68b6d3b27991fd921dbde14/res/drawable-anydpi-v21/design_ic_visibility.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-anydpi-v21/ic_fingerprint.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-anydpi-v21/ic_fingerprint.xml"
+    },
+    {
+        "merged": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/drawable-anydpi-v21/folder_star_32dp.xml",
+        "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/generated/res/pngs/generic/debug/drawable-anydpi-v21/folder_star_32dp.xml"
+    }
+]

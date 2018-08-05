@@ -1,0 +1,48 @@
+{
+    "logs": [
+        {
+            "outputFile": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/incremental/mergeGenericDebugResources/merged.dir/values-large-land-v4/values-large-land-v4.xml",
+            "map": [
+                {
+                    "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/values-large-land/bools.xml",
+                    "from": {
+                        "startLines": "20",
+                        "startColumns": "4",
+                        "startOffsets": "767",
+                        "endColumns": "46",
+                        "endOffsets": "809"
+                    },
+                    "to": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "46",
+                        "endOffsets": "97"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/values-large-land-v4/values-large-land-v4.xml",
+            "map": [
+                {
+                    "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/values-large-land/bools.xml",
+                    "from": {
+                        "startLines": "20",
+                        "startColumns": "4",
+                        "startOffsets": "767",
+                        "endColumns": "46",
+                        "endOffsets": "809"
+                    },
+                    "to": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "46",
+                        "endOffsets": "97"
+                    }
+                }
+            ]
+        }
+    ]
+}

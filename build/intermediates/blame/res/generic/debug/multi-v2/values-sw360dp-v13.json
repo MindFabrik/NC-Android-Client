@@ -1,0 +1,48 @@
+{
+    "logs": [
+        {
+            "outputFile": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/incremental/mergeGenericDebugResources/merged.dir/values-sw360dp-v13/values-sw360dp-v13.xml",
+            "map": [
+                {
+                    "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/values-sw360dp/dims.xml",
+                    "from": {
+                        "startLines": "21,23,20,24",
+                        "startColumns": "2,2,2,2",
+                        "startOffsets": "830,945,775,1006",
+                        "endColumns": "53,60,54,46",
+                        "endOffsets": "881,1003,827,1050"
+                    },
+                    "to": {
+                        "startLines": "2,3,4,5",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,111,174,231",
+                        "endColumns": "55,62,56,48",
+                        "endOffsets": "106,169,226,275"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/values-sw360dp-v13/values-sw360dp-v13.xml",
+            "map": [
+                {
+                    "source": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/src/main/res/values-sw360dp/dims.xml",
+                    "from": {
+                        "startLines": "21,23,20,24",
+                        "startColumns": "2,2,2,2",
+                        "startOffsets": "830,945,775,1006",
+                        "endColumns": "53,60,54,46",
+                        "endOffsets": "881,1003,827,1050"
+                    },
+                    "to": {
+                        "startLines": "2,3,4,5",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,111,174,231",
+                        "endColumns": "55,62,56,48",
+                        "endOffsets": "106,169,226,275"
+                    }
+                }
+            ]
+        }
+    ]
+}
