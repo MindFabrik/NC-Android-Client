@@ -1,4 +1,4 @@
-/**
+/*
  *   ownCloud Android client application
  *
  *   @author David A. Velasco
@@ -21,9 +21,12 @@
 package com.owncloud.android.ui.activity;
 
 import android.accounts.Account;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -33,8 +36,11 @@ import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.widget.AppCompatButton;
+import android.support.v7.widget.AppCompatSpinner;
+import android.support.v7.widget.SearchView;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -42,6 +48,8 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -54,15 +62,13 @@ import com.owncloud.android.ui.dialog.IndeterminateProgressDialog;
 import com.owncloud.android.ui.dialog.SortingOrderDialogFragment;
 import com.owncloud.android.ui.fragment.ExtendedListFragment;
 import com.owncloud.android.ui.fragment.LocalFileListFragment;
-import com.owncloud.android.utils.AnalyticsUtils;
 import com.owncloud.android.utils.FileSortOrder;
 import com.owncloud.android.utils.FileStorageUtils;
 import com.owncloud.android.utils.ThemeUtils;
 
 import java.io.File;
-
-import static com.owncloud.android.db.PreferenceManager.getSortOrder;
-
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Displays local files and let the user choose what of them wants to upload
@@ -73,19 +79,19 @@ public class UploadFilesActivity extends FileActivity implements
         OnClickListener, ConfirmationDialogFragmentListener, SortingOrderDialogFragment.OnSortingOrderListener {
 
     private static final String SORT_ORDER_DIALOG_TAG = "SORT_ORDER_DIALOG";
+    private static final int SINGLE_DIR = 1;
 
     private ArrayAdapter<String> mDirectories;
-    private File mCurrentDir = null;
-    private boolean mSelectAll = false;
-    private boolean mLocalFolderPickerMode = false;
+    private File mCurrentDir;
+    private boolean mSelectAll;
+    private boolean mLocalFolderPickerMode;
     private LocalFileListFragment mFileListFragment;
     protected Button mUploadBtn;
     private Spinner mBehaviourSpinner;
     private Account mAccountOnCreation;
     private DialogFragment mCurrentDialog;
     private Menu mOptionsMenu;
-
-    private static final String SCREEN_NAME = "Choose local files to upload";
+    private SearchView mSearchView;
 
     public static final String EXTRA_CHOSEN_FILES =
             UploadFilesActivity.class.getCanonicalName() + ".EXTRA_CHOSEN_FILES";
@@ -117,19 +123,29 @@ public class UploadFilesActivity extends FileActivity implements
             mLocalFolderPickerMode = extras.getBoolean(KEY_LOCAL_FOLDER_PICKER_MODE, false);
         }
 
-        if(savedInstanceState != null) {
+        if (savedInstanceState != null) {
             mCurrentDir = new File(savedInstanceState.getString(UploadFilesActivity.KEY_DIRECTORY_PATH, Environment
                     .getExternalStorageDirectory().getAbsolutePath()));
             mSelectAll = savedInstanceState.getBoolean(UploadFilesActivity.KEY_ALL_SELECTED, false);
         } else {
-            mCurrentDir = Environment.getExternalStorageDirectory();
+            String lastUploadFrom = PreferenceManager.getUploadFromLocalLastPath(this);
+
+            if (!lastUploadFrom.isEmpty()) {
+                mCurrentDir = new File(lastUploadFrom);
+
+                while (!mCurrentDir.exists()) {
+                    mCurrentDir = mCurrentDir.getParentFile();
+                }
+            } else {
+                mCurrentDir = Environment.getExternalStorageDirectory();
+            }
         }
-        
+
         mAccountOnCreation = getAccount();
-                
+
         /// USER INTERFACE
-            
-        // Drop-down navigation 
+
+        // Drop-down navigation
         mDirectories = new CustomArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item);
         File currDir = mCurrentDir;
         while(currDir != null && currDir.getParentFile() != null) {
@@ -148,27 +164,34 @@ public class UploadFilesActivity extends FileActivity implements
         }
 
         mFileListFragment = (LocalFileListFragment) getSupportFragmentManager().findFragmentById(R.id.local_files_list);
-        
+
         // Set input controllers
         findViewById(R.id.upload_files_btn_cancel).setOnClickListener(this);
 
         mUploadBtn = (AppCompatButton) findViewById(R.id.upload_files_btn_upload);
-        mUploadBtn.getBackground().setColorFilter(ThemeUtils.primaryAccentColor(), PorterDuff.Mode.SRC_ATOP);
+        mUploadBtn.getBackground().setColorFilter(ThemeUtils.primaryAccentColor(this), PorterDuff.Mode.SRC_ATOP);
         mUploadBtn.setOnClickListener(this);
 
         int localBehaviour = PreferenceManager.getUploaderBehaviour(this);
 
         // file upload spinner
         mBehaviourSpinner = findViewById(R.id.upload_files_spinner_behaviour);
-        ArrayAdapter<CharSequence> behaviourAdapter = ArrayAdapter.createFromResource(this,
-                R.array.upload_files_behaviour, android.R.layout.simple_spinner_item);
+
+        List<String> behaviours = new ArrayList<>();
+        behaviours.add(getString(R.string.uploader_upload_files_behaviour_move_to_nextcloud_folder,
+                ThemeUtils.getDefaultDisplayNameForRootFolder(this)));
+        behaviours.add(getString(R.string.uploader_upload_files_behaviour_only_upload));
+        behaviours.add(getString(R.string.uploader_upload_files_behaviour_upload_and_delete_from_source));
+
+        ArrayAdapter<String> behaviourAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
+                behaviours);
         behaviourAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mBehaviourSpinner.setAdapter(behaviourAdapter);
         mBehaviourSpinner.setSelection(localBehaviour);
 
         // setup the toolbar
         setupToolbar();
-            
+
         // Action bar setup
         ActionBar actionBar = getSupportActionBar();
         actionBar.setHomeButtonEnabled(true);   // mandatory since Android ICS, according to the
@@ -178,12 +201,18 @@ public class UploadFilesActivity extends FileActivity implements
         actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
         actionBar.setListNavigationCallbacks(mDirectories, this);
 
+        Drawable backArrow = getResources().getDrawable(R.drawable.ic_arrow_back);
+
+        if (actionBar != null) {
+            actionBar.setHomeAsUpIndicator(ThemeUtils.tintDrawable(backArrow, ThemeUtils.fontColor(this)));
+        }
+
         // wait dialog
         if (mCurrentDialog != null) {
             mCurrentDialog.dismiss();
             mCurrentDialog = null;
         }
-            
+
         Log_OC.d(TAG, "onCreate() end");
     }
 
@@ -197,7 +226,7 @@ public class UploadFilesActivity extends FileActivity implements
      */
     public static void startUploadActivityForResult(Activity activity, Account account, int requestCode) {
         Intent action = new Intent(activity, UploadFilesActivity.class);
-        action.putExtra(EXTRA_ACCOUNT, (account));
+        action.putExtra(EXTRA_ACCOUNT, account);
         activity.startActivityForResult(action, requestCode);
     }
 
@@ -215,6 +244,16 @@ public class UploadFilesActivity extends FileActivity implements
         MenuItem switchView = menu.findItem(R.id.action_switch_view);
         switchView.setTitle(isGridView() ? R.string.action_switch_list_view : R.string.action_switch_grid_view);
 
+        int fontColor = ThemeUtils.fontColor(this);
+        final MenuItem item = menu.findItem(R.id.action_search);
+        mSearchView = (SearchView) MenuItemCompat.getActionView(item);
+        EditText editText = mSearchView.findViewById(android.support.v7.appcompat.R.id.search_src_text);
+        editText.setHintTextColor(fontColor);
+        editText.setTextColor(fontColor);
+        ImageView searchClose = mSearchView.findViewById(android.support.v7.appcompat.R.id.search_close_btn);
+        searchClose.setColorFilter(fontColor);
+
+
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -224,7 +263,7 @@ public class UploadFilesActivity extends FileActivity implements
         switch (item.getItemId()) {
             case android.R.id.home: {
                 if(mCurrentDir != null && mCurrentDir.getParentFile() != null){
-                    onBackPressed(); 
+                    onBackPressed();
                 }
                 break;
             }
@@ -241,7 +280,7 @@ public class UploadFilesActivity extends FileActivity implements
                 ft.addToBackStack(null);
 
                 SortingOrderDialogFragment mSortingOrderDialogFragment = SortingOrderDialogFragment.newInstance(
-                        getSortOrder(this, null));
+                    PreferenceManager.getSortOrderByType(this, FileSortOrder.Type.uploadFilesView));
                 mSortingOrderDialogFragment.show(ft, SORT_ORDER_DIALOG_TAG);
 
                 break;
@@ -269,45 +308,61 @@ public class UploadFilesActivity extends FileActivity implements
     public void onSortingOrderChosen(FileSortOrder selection) {
         mFileListFragment.sortFiles(selection);
     }
-    
+
     @Override
     public boolean onNavigationItemSelected(int itemPosition, long itemId) {
         int i = itemPosition;
         while (i-- != 0) {
             onBackPressed();
         }
-        // the next operation triggers a new call to this method, but it's necessary to 
-        // ensure that the name exposed in the action bar is the current directory when the 
+        // the next operation triggers a new call to this method, but it's necessary to
+        // ensure that the name exposed in the action bar is the current directory when the
         // user selected it in the navigation list
         if (itemPosition != 0) {
             getSupportActionBar().setSelectedNavigationItem(0);
         }
         return true;
     }
-    
-    @Override
-    public void onBackPressed() {
-        if (mDirectories.getCount() <= 1) {
-            finish();
-            return;
-        }
-        popDirname();
-        mFileListFragment.onNavigateUp();
-        mCurrentDir = mFileListFragment.getCurrentDirectory();
 
-        if (mCurrentDir.getParentFile() == null) {
-            ActionBar actionBar = getSupportActionBar();
-            if (actionBar != null) {
-                actionBar.setDisplayHomeAsUpEnabled(false);
-            }
-        }
-
-        // invalidate checked state when navigating directories
-        if(!mLocalFolderPickerMode) {
-            setSelectAllMenuItem(mOptionsMenu.findItem(R.id.action_select_all), false);
+    private boolean isSearchOpen() {
+        if (mSearchView == null) {
+            return false;
+        } else {
+            View mSearchEditFrame = mSearchView.findViewById(android.support.v7.appcompat.R.id.search_edit_frame);
+            return mSearchEditFrame != null && mSearchEditFrame.getVisibility() == View.VISIBLE;
         }
     }
-    
+
+    @Override
+    public void onBackPressed() {
+        if (isSearchOpen() && mSearchView != null) {
+            mSearchView.setQuery("", false);
+            mFileListFragment.onClose();
+            mSearchView.onActionViewCollapsed();
+            setDrawerIndicatorEnabled(isDrawerIndicatorAvailable());
+        } else {
+            if (mDirectories.getCount() <= SINGLE_DIR) {
+                finish();
+                return;
+            }
+            popDirname();
+            mFileListFragment.onNavigateUp();
+            mCurrentDir = mFileListFragment.getCurrentDirectory();
+
+            if (mCurrentDir.getParentFile() == null) {
+                ActionBar actionBar = getSupportActionBar();
+                if (actionBar != null) {
+                    actionBar.setDisplayHomeAsUpEnabled(false);
+                }
+            }
+
+            // invalidate checked state when navigating directories
+            if (!mLocalFolderPickerMode) {
+                setSelectAllMenuItem(mOptionsMenu.findItem(R.id.action_select_all), false);
+            }
+        }
+    }
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         // responsibility of restore is preferred in onCreate() before than in
@@ -322,12 +377,6 @@ public class UploadFilesActivity extends FileActivity implements
             outState.putBoolean(UploadFilesActivity.KEY_ALL_SELECTED, false);
         }
         Log_OC.d(TAG, "onSaveInstanceState() end");
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        AnalyticsUtils.setCurrentScreenName(this, SCREEN_NAME, TAG);
     }
 
     /**
@@ -357,7 +406,7 @@ public class UploadFilesActivity extends FileActivity implements
         if(checked) {
             selectAll.setIcon(R.drawable.ic_select_none);
         } else {
-            selectAll.setIcon(ThemeUtils.tintDrawable(R.drawable.ic_select_all, ThemeUtils.primaryColor()));
+            selectAll.setIcon(ThemeUtils.tintDrawable(R.drawable.ic_select_all, ThemeUtils.primaryColor(this)));
         }
     }
 
@@ -365,25 +414,29 @@ public class UploadFilesActivity extends FileActivity implements
      * Custom array adapter to override text colors
      */
     private class CustomArrayAdapter<T> extends ArrayAdapter<T> {
-    
+
         public CustomArrayAdapter(UploadFilesActivity ctx, int view) {
             super(ctx, view);
         }
 
+        @SuppressLint("RestrictedApi")
         public @NonNull View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
             View v = super.getView(position, convertView, parent);
-    
-            ((TextView) v).setTextColor(getResources().getColorStateList(
-                    android.R.color.white));
+
+            int color = ThemeUtils.fontColor(getContext());
+            ColorStateList colorStateList = ColorStateList.valueOf(color);
+
+            ((AppCompatSpinner) parent).setSupportBackgroundTintList(colorStateList);
+            ((TextView) v).setTextColor(colorStateList);
             return v;
         }
-    
+
         public View getDropDownView(int position, View convertView, @NonNull ViewGroup parent) {
             View v = super.getDropDownView(position, convertView, parent);
-    
+
             ((TextView) v).setTextColor(getResources().getColorStateList(
                     android.R.color.white));
-    
+
             return v;
         }
     }
@@ -411,7 +464,7 @@ public class UploadFilesActivity extends FileActivity implements
     public void onFileClick(File file) {
         // nothing to do
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -430,8 +483,8 @@ public class UploadFilesActivity extends FileActivity implements
 
     /**
      * Performs corresponding action when user presses 'Cancel' or 'Upload' button
-     * 
-     * TODO Make here the real request to the Upload service ; will require to receive the account and 
+     *
+     * TODO Make here the real request to the Upload service ; will require to receive the account and
      * target folder where the upload must be done in the received intent.
      */
     @Override
@@ -441,9 +494,11 @@ public class UploadFilesActivity extends FileActivity implements
             finish();
 
         } else if (v.getId() == R.id.upload_files_btn_upload) {
-            if(mLocalFolderPickerMode) {
+            PreferenceManager.setUploadFromLocalLastPath(this, mCurrentDir.getAbsolutePath());
+
+            if (mLocalFolderPickerMode) {
                 Intent data = new Intent();
-                if(mCurrentDir != null) {
+                if (mCurrentDir != null) {
                     data.putExtra(EXTRA_CHOSEN_FILES, mCurrentDir.getAbsolutePath());
                 }
                 setResult(RESULT_OK, data);
@@ -458,7 +513,7 @@ public class UploadFilesActivity extends FileActivity implements
     /**
      * Asynchronous task checking if there is space enough to copy all the files chosen
      * to upload into the ownCloud local folder.
-     * 
+     *
      * Maybe an AsyncTask is not strictly necessary, but who really knows.
      */
     private class CheckAvailableSpaceTask extends AsyncTask<Boolean, Void, Boolean> {
@@ -489,7 +544,7 @@ public class UploadFilesActivity extends FileActivity implements
                     File localFile = new File(localPath);
                     total += localFile.length();
                 }
-                return FileStorageUtils.getUsableSpace(mAccountOnCreation.name) >= total;
+                return FileStorageUtils.getUsableSpace() >= total;
             }
 
             return true;
@@ -509,7 +564,7 @@ public class UploadFilesActivity extends FileActivity implements
                 mCurrentDialog.dismiss();
                 mCurrentDialog = null;
             }
-            
+
             if (result) {
                 // return the list of selected files (success)
                 Intent data = new Intent();
@@ -552,7 +607,7 @@ public class UploadFilesActivity extends FileActivity implements
     @Override
     public void onConfirmation(String callerTag) {
         Log_OC.d(TAG, "Positive button in dialog was clicked; dialog tag is " + callerTag);
-        if (callerTag.equals(QUERY_TO_MOVE_DIALOG_TAG)) {
+        if (QUERY_TO_MOVE_DIALOG_TAG.equals(callerTag)) {
             // return the list of selected files to the caller activity (success),
             // signaling that they should be moved to the ownCloud folder, instead of copied
             Intent data = new Intent();
@@ -581,7 +636,7 @@ public class UploadFilesActivity extends FileActivity implements
                 setResult(RESULT_CANCELED);
                 finish();
             }
-            
+
         } else {
             setResult(RESULT_CANCELED);
             finish();

@@ -1,10 +1,20 @@
 {
     "logs": [
         {
-            "outputFile": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/incremental/mergeGenericDebugResources/merged.dir/values-v16/values-v16.xml",
+            "outputFile": "/Users/OliverO 1/Documents/GitRepository/NC-Client-Android GIT 3.4.0/build/intermediates/incremental/mergeGenericDebugResources/merged.dir/values-v16/values-v16.xml",
             "map": [
                 {
-                    "source": "/Users/OliverO/.gradle/caches/transforms-1/files-1.1/appcompat-v7-26.1.0.aar/63d85d9dc3c95848de0ba91d5149a111/res/values-v16/values-v16.xml",
+                    "source": "/Users/OliverO 1/.gradle/caches/transforms-1/files-1.1/support-compat-28.0.0.aar/a611dab12ba3c6fbfd080efa09d1fafb/res/values-v16/values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "65",
+                        "endOffsets": "116"
+                    }
+                },
+                {
+                    "source": "/Users/OliverO 1/.gradle/caches/transforms-1/files-1.1/appcompat-v7-28.0.0.aar/d23fbc75a84924b19d91765d470d2772/res/values-v16/values-v16.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -20,50 +30,6 @@
                         "endLines": "6",
                         "endColumns": "12",
                         "endOffsets": "289"
-                    }
-                },
-                {
-                    "source": "/Users/OliverO/.gradle/caches/transforms-1/files-1.1/support-compat-26.1.0.aar/e198567ef89a735a5721966c99ebd3c1/res/values-v16/values-v16.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "65",
-                        "endOffsets": "116"
-                    }
-                }
-            ]
-        },
-        {
-            "outputFile": "/Users/OliverO/Documents/GitRepository/NC-Client-Android GIT 3.1.0/build/intermediates/res/merged/generic/debug/values-v16/values-v16.xml",
-            "map": [
-                {
-                    "source": "/Users/OliverO/.gradle/caches/transforms-1/files-1.1/appcompat-v7-26.1.0.aar/63d85d9dc3c95848de0ba91d5149a111/res/values-v16/values-v16.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endLines": "5",
-                        "endColumns": "12",
-                        "endOffsets": "223"
-                    },
-                    "to": {
-                        "startLines": "3",
-                        "startColumns": "4",
-                        "startOffsets": "121",
-                        "endLines": "6",
-                        "endColumns": "12",
-                        "endOffsets": "289"
-                    }
-                },
-                {
-                    "source": "/Users/OliverO/.gradle/caches/transforms-1/files-1.1/support-compat-26.1.0.aar/e198567ef89a735a5721966c99ebd3c1/res/values-v16/values-v16.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "65",
-                        "endOffsets": "116"
                     }
                 }
             ]

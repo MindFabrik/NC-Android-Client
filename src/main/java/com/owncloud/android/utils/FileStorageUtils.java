@@ -50,10 +50,14 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 /**
  * Static methods to help in access to local file system.
  */
-public class FileStorageUtils {
+public final class FileStorageUtils {
     private static final String TAG = FileStorageUtils.class.getSimpleName();
 
     public static final String PATTERN_YYYY_MM = "yyyy/MM/";
+
+    private FileStorageUtils() {
+        // utility class -> private constructor
+    }
 
     /**
      * Get local owncloud storage path for accountName.
@@ -95,10 +99,9 @@ public class FileStorageUtils {
     /**
      * Optimistic number of bytes available on sd-card. accountName is ignored.
      *
-     * @param accountName not used. can thus be null.
      * @return Optimistic number of available bytes (can be less)
      */
-    public static long getUsableSpace(String accountName) {
+    public static long getUsableSpace() {
         File savePath = new File(MainApp.getStoragePath());
         return savePath.getUsableSpace();
     }
@@ -159,12 +162,12 @@ public class FileStorageUtils {
     public static OCFile fillOCFile(RemoteFile remote) {
         OCFile file = new OCFile(remote.getRemotePath());
         file.setCreationTimestamp(remote.getCreationTimestamp());
-        if (remote.getMimeType().equalsIgnoreCase(MimeType.DIRECTORY)) {
+        if (MimeType.DIRECTORY.equalsIgnoreCase(remote.getMimeType())) {
             file.setFileLength(remote.getSize());
         } else {
             file.setFileLength(remote.getLength());
         }
-        file.setMimetype(remote.getMimeType());
+        file.setMimeType(remote.getMimeType());
         file.setModificationTimestamp(remote.getModifiedTimestamp());
         file.setEtag(remote.getEtag());
         file.setPermissions(remote.getPermissions());
@@ -174,6 +177,8 @@ public class FileStorageUtils {
             file.setEncrypted(remote.getIsEncrypted());
         }
         file.setMountType(remote.getMountType());
+        file.setHasPreview(remote.hasPreview());
+
         return file;
     }
 
@@ -187,12 +192,12 @@ public class FileStorageUtils {
         RemoteFile file = new RemoteFile(ocFile.getRemotePath());
         file.setCreationTimestamp(ocFile.getCreationTimestamp());
         file.setLength(ocFile.getFileLength());
-        file.setMimeType(ocFile.getMimetype());
+        file.setMimeType(ocFile.getMimeType());
         file.setModifiedTimestamp(ocFile.getModificationTimestamp());
         file.setEtag(ocFile.getEtag());
         file.setPermissions(ocFile.getPermissions());
         file.setRemoteId(ocFile.getRemoteId());
-        file.setFavorite(ocFile.getIsFavorite());
+        file.setFavorite(ocFile.isFavorite());
         return file;
     }
 
@@ -277,6 +282,8 @@ public class FileStorageUtils {
         }
     }
 
+    @SuppressFBWarnings(value="OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE",
+            justification="False-positive on the output stream")
     public static boolean copyFile(File src, File target) {
         boolean ret = true;
 
@@ -313,7 +320,7 @@ public class FileStorageUtils {
         return ret;
     }
 
-    public static boolean moveFile(File sourceFile, File targetFile) throws IOException {
+    public static boolean moveFile(File sourceFile, File targetFile) {
         if (copyFile(sourceFile, targetFile)) {
             return sourceFile.delete();
         } else {
@@ -332,13 +339,13 @@ public class FileStorageUtils {
         file.delete();
     }
 
-    public static boolean checkIfFileFinishedSaving(OCFile file) {
+    public static void checkIfFileFinishedSaving(OCFile file) {
         long lastModified = 0;
         long lastSize = 0;
         File realFile = new File(file.getStoragePath());
 
         if (realFile.lastModified() != file.getModificationTimestamp() && realFile.length() != file.getFileLength()) {
-            while ((realFile.lastModified() != lastModified) && (realFile.length() != lastSize)) {
+            while (realFile.lastModified() != lastModified && realFile.length() != lastSize) {
                 lastModified = realFile.lastModified();
                 lastSize = realFile.length();
                 try {
@@ -348,8 +355,6 @@ public class FileStorageUtils {
                 }
             }
         }
-
-        return true;
     }
 
     /**
@@ -363,7 +368,7 @@ public class FileStorageUtils {
         if (file.isEncrypted()) {
             return true;
         }
-        
+
         while (!OCFile.ROOT_PATH.equals(file.getRemotePath())) {
             if (file.isEncrypted()) {
                 return true;

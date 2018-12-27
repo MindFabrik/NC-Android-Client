@@ -60,15 +60,13 @@ import static com.owncloud.android.datamodel.SyncedFolderDisplayItem.UNPERSISTED
  */
 public class SyncedFolderPreferencesDialogFragment extends DialogFragment {
 
-    private final static String TAG = SyncedFolderPreferencesDialogFragment.class.getSimpleName();
     public static final String SYNCED_FOLDER_PARCELABLE = "SyncedFolderParcelable";
-    private static final String BEHAVIOUR_DIALOG_STATE = "BEHAVIOUR_DIALOG_STATE";
     public static final int REQUEST_CODE__SELECT_REMOTE_FOLDER = 0;
     public static final int REQUEST_CODE__SELECT_LOCAL_FOLDER = 1;
-
+    private final static String TAG = SyncedFolderPreferencesDialogFragment.class.getSimpleName();
+    private static final String BEHAVIOUR_DIALOG_STATE = "BEHAVIOUR_DIALOG_STATE";
+    protected View mView;
     private CharSequence[] mUploadBehaviorItemStrings;
-
-    protected View mView = null;
     private SwitchCompat mEnabledSwitch;
     private AppCompatCheckBox mUploadOnWifiCheckbox;
     private AppCompatCheckBox mUploadOnChargingCheckbox;
@@ -85,14 +83,14 @@ public class SyncedFolderPreferencesDialogFragment extends DialogFragment {
     private AlertDialog behaviourDialog;
 
     public static SyncedFolderPreferencesDialogFragment newInstance(SyncedFolderDisplayItem syncedFolder, int section) {
-        SyncedFolderPreferencesDialogFragment dialogFragment = new SyncedFolderPreferencesDialogFragment();
-
         if (syncedFolder == null) {
             throw new IllegalArgumentException("SyncedFolder is mandatory but NULL!");
         }
 
         Bundle args = new Bundle();
         args.putParcelable(SYNCED_FOLDER_PARCELABLE, new SyncedFolderParcelable(syncedFolder, section));
+
+        SyncedFolderPreferencesDialogFragment dialogFragment = new SyncedFolderPreferencesDialogFragment();
         dialogFragment.setArguments(args);
         dialogFragment.setStyle(STYLE_NORMAL, R.style.Theme_ownCloud_Dialog);
 
@@ -138,7 +136,7 @@ public class SyncedFolderPreferencesDialogFragment extends DialogFragment {
      * @param view the parent view
      */
     private void setupDialogElements(View view) {
-        int accentColor = ThemeUtils.primaryAccentColor();
+        int accentColor = ThemeUtils.primaryAccentColor(getContext());
 
         if (mSyncedFolder.getType().getId() > MediaFolderType.CUSTOM.getId()) {
             // hide local folder chooser and delete for non-custom folders
@@ -163,15 +161,15 @@ public class SyncedFolderPreferencesDialogFragment extends DialogFragment {
         }
 
         // find/saves UI elements
-        mEnabledSwitch = (SwitchCompat) view.findViewById(R.id.sync_enabled);
+        mEnabledSwitch = view.findViewById(R.id.sync_enabled);
         ThemeUtils.tintSwitch(mEnabledSwitch, accentColor);
 
-        mLocalFolderPath = (TextView) view.findViewById(R.id.synced_folders_settings_local_folder_path);
+        mLocalFolderPath = view.findViewById(R.id.synced_folders_settings_local_folder_path);
 
-        mLocalFolderSummary = (TextView) view.findViewById(R.id.local_folder_summary);
-        mRemoteFolderSummary = (TextView) view.findViewById(R.id.remote_folder_summary);
+        mLocalFolderSummary = view.findViewById(R.id.local_folder_summary);
+        mRemoteFolderSummary = view.findViewById(R.id.remote_folder_summary);
 
-        mUploadOnWifiCheckbox = (AppCompatCheckBox) view.findViewById(R.id.setting_instant_upload_on_wifi_checkbox);
+        mUploadOnWifiCheckbox = view.findViewById(R.id.setting_instant_upload_on_wifi_checkbox);
         ThemeUtils.tintCheckbox(mUploadOnWifiCheckbox, accentColor);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -179,21 +177,21 @@ public class SyncedFolderPreferencesDialogFragment extends DialogFragment {
         } else {
             view.findViewById(R.id.setting_instant_upload_on_charging_container).setVisibility(View.VISIBLE);
 
-            mUploadOnChargingCheckbox = (AppCompatCheckBox) view.findViewById(
+            mUploadOnChargingCheckbox = view.findViewById(
                     R.id.setting_instant_upload_on_charging_checkbox);
             ThemeUtils.tintCheckbox(mUploadOnChargingCheckbox, accentColor);
         }
 
-        mUploadUseSubfoldersCheckbox = (AppCompatCheckBox) view.findViewById(
+        mUploadUseSubfoldersCheckbox = view.findViewById(
                 R.id.setting_instant_upload_path_use_subfolders_checkbox);
         ThemeUtils.tintCheckbox(mUploadUseSubfoldersCheckbox, accentColor);
 
-        mUploadBehaviorSummary = (TextView) view.findViewById(R.id.setting_instant_behaviour_summary);
+        mUploadBehaviorSummary = view.findViewById(R.id.setting_instant_behaviour_summary);
 
-        mCancel = (AppCompatButton) view.findViewById(R.id.cancel);
+        mCancel = view.findViewById(R.id.cancel);
         mCancel.setTextColor(accentColor);
 
-        mSave = (AppCompatButton) view.findViewById(R.id.save);
+        mSave = view.findViewById(R.id.save);
         mSave.setTextColor(accentColor);
 
         // Set values
@@ -235,6 +233,8 @@ public class SyncedFolderPreferencesDialogFragment extends DialogFragment {
     private void setEnabled(boolean enabled) {
         mSyncedFolder.setEnabled(enabled);
         mEnabledSwitch.setChecked(enabled);
+
+        setupViews(mView, enabled);
     }
 
     /**
@@ -276,6 +276,34 @@ public class SyncedFolderPreferencesDialogFragment extends DialogFragment {
         } else {
             mView.findViewById(R.id.save).setEnabled(false);
         }
+    }
+
+    private void setupViews(View view, boolean enable) {
+        float alpha;
+        if (enable) {
+            alpha = 1.0f;
+        } else {
+            alpha = 0.7f;
+        }
+        view.findViewById(R.id.setting_instant_upload_on_wifi_container).setEnabled(enable);
+        view.findViewById(R.id.setting_instant_upload_on_wifi_container).setAlpha(alpha);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            view.findViewById(R.id.setting_instant_upload_on_charging_container).setEnabled(enable);
+            view.findViewById(R.id.setting_instant_upload_on_charging_container).setAlpha(alpha);
+        }
+
+        view.findViewById(R.id.setting_instant_upload_path_use_subfolders_container).setEnabled(enable);
+        view.findViewById(R.id.setting_instant_upload_path_use_subfolders_container).setAlpha(alpha);
+
+        view.findViewById(R.id.remote_folder_container).setEnabled(enable);
+        view.findViewById(R.id.remote_folder_container).setAlpha(alpha);
+
+        view.findViewById(R.id.local_folder_container).setEnabled(enable);
+        view.findViewById(R.id.local_folder_container).setAlpha(alpha);
+
+        view.findViewById(R.id.setting_instant_behaviour_container).setEnabled(enable);
+        view.findViewById(R.id.setting_instant_behaviour_container).setAlpha(alpha);
     }
 
     /**
@@ -326,6 +354,11 @@ public class SyncedFolderPreferencesDialogFragment extends DialogFragment {
             }
         });
 
+        mRemoteFolderSummary.setOnClickListener(textView -> {
+            mRemoteFolderSummary.setEllipsize(null);
+            mRemoteFolderSummary.setMaxLines(Integer.MAX_VALUE);
+        });
+
         view.findViewById(R.id.local_folder_container).setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -333,6 +366,11 @@ public class SyncedFolderPreferencesDialogFragment extends DialogFragment {
                 action.putExtra(UploadFilesActivity.KEY_LOCAL_FOLDER_PICKER_MODE, true);
                 getActivity().startActivityForResult(action, REQUEST_CODE__SELECT_LOCAL_FOLDER);
             }
+        });
+
+        mLocalFolderSummary.setOnClickListener(textView -> {
+            mLocalFolderSummary.setEllipsize(null);
+            mLocalFolderSummary.setMaxLines(Integer.MAX_VALUE);
         });
 
         view.findViewById(R.id.sync_enabled).setOnClickListener(new OnClickListener() {
@@ -355,7 +393,7 @@ public class SyncedFolderPreferencesDialogFragment extends DialogFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(ThemeUtils.getColoredTitle(
                 getResources().getString(R.string.prefs_instant_behaviour_dialogTitle),
-                ThemeUtils.primaryAccentColor()))
+                ThemeUtils.primaryAccentColor(getContext())))
                 .setSingleChoiceItems(getResources().getTextArray(R.array.pref_behaviour_entries),
                         mSyncedFolder.getUploadActionInteger(),
                         new
@@ -403,6 +441,33 @@ public class SyncedFolderPreferencesDialogFragment extends DialogFragment {
         super.onDestroyView();
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putBoolean(BEHAVIOUR_DIALOG_STATE, behaviourDialogShown);
+
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        behaviourDialogShown = savedInstanceState != null &&
+                savedInstanceState.getBoolean(BEHAVIOUR_DIALOG_STATE, false);
+
+        if (behaviourDialogShown) {
+            showBehaviourDialog();
+        }
+
+        super.onViewStateRestored(savedInstanceState);
+    }
+
+    public interface OnSyncedFolderPreferenceListener {
+        void onSaveSyncedFolderPreference(SyncedFolderParcelable syncedFolder);
+
+        void onCancelSyncedFolderPreference();
+
+        void onDeleteSyncedFolderPreference(SyncedFolderParcelable syncedFolder);
+    }
+
     private class OnSyncedFolderSaveClickListener implements OnClickListener {
         @Override
         public void onClick(View v) {
@@ -425,32 +490,5 @@ public class SyncedFolderPreferencesDialogFragment extends DialogFragment {
             dismiss();
             ((OnSyncedFolderPreferenceListener) getActivity()).onDeleteSyncedFolderPreference(mSyncedFolder);
         }
-    }
-
-    public interface OnSyncedFolderPreferenceListener {
-        void onSaveSyncedFolderPreference(SyncedFolderParcelable syncedFolder);
-
-        void onCancelSyncedFolderPreference();
-
-        void onDeleteSyncedFolderPreference(SyncedFolderParcelable syncedFolder);
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        outState.putBoolean(BEHAVIOUR_DIALOG_STATE, behaviourDialogShown);
-
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
-        behaviourDialogShown = savedInstanceState != null &&
-                savedInstanceState.getBoolean(BEHAVIOUR_DIALOG_STATE, false);
-
-        if (behaviourDialogShown) {
-            showBehaviourDialog();
-        }
-
-        super.onViewStateRestored(savedInstanceState);
     }
 }

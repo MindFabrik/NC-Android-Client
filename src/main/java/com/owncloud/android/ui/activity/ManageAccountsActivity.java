@@ -56,7 +56,6 @@ import com.owncloud.android.ui.adapter.AccountListAdapter;
 import com.owncloud.android.ui.adapter.AccountListItem;
 import com.owncloud.android.ui.events.AccountRemovedEvent;
 import com.owncloud.android.ui.helpers.FileOperationsHelper;
-import com.owncloud.android.utils.AnalyticsUtils;
 import com.owncloud.android.utils.DisplayUtils;
 import com.owncloud.android.utils.ThemeUtils;
 
@@ -66,6 +65,7 @@ import org.parceler.Parcels;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -74,48 +74,55 @@ import java.util.Set;
 public class ManageAccountsActivity extends FileActivity
         implements AccountListAdapter.AccountListAdapterListener, AccountManagerCallback<Boolean>, ComponentsGetter {
     private static final String TAG = ManageAccountsActivity.class.getSimpleName();
+
     public static final String KEY_ACCOUNT_LIST_CHANGED = "ACCOUNT_LIST_CHANGED";
     public static final String KEY_CURRENT_ACCOUNT_CHANGED = "CURRENT_ACCOUNT_CHANGED";
-
     public static final String PENDING_FOR_REMOVAL = "PENDING_FOR_REMOVAL";
 
     private static final String KEY_DISPLAY_NAME = "DISPLAY_NAME";
 
     private static final int KEY_USER_INFO_REQUEST_CODE = 13;
     private static final int KEY_DELETE_CODE = 101;
+    private static final int SINGLE_ACCOUNT = 1;
+    private static final int MIN_MULTI_ACCOUNT_SIZE = 2;
 
     private ListView mListView;
     private final Handler mHandler = new Handler();
     private String mAccountName;
     private AccountListAdapter mAccountListAdapter;
-    private ServiceConnection mDownloadServiceConnection, mUploadServiceConnection = null;
-    Set<String> mOriginalAccounts;
-    String mOriginalCurrentAccount;
+    private ServiceConnection mDownloadServiceConnection;
+    private ServiceConnection mUploadServiceConnection;
+    private Set<String> mOriginalAccounts;
+    private String mOriginalCurrentAccount;
     private Drawable mTintedCheck;
 
-    private static final String SCREEN_NAME = "Logs";
     private ArbitraryDataProvider arbitraryDataProvider;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mTintedCheck = DrawableCompat.wrap(ContextCompat.getDrawable(this, R.drawable.ic_account_circle_white_18dp));
-        int tint = ThemeUtils.primaryColor();
+        mTintedCheck = DrawableCompat.wrap(ContextCompat.getDrawable(this, R.drawable.account_circle_white));
+        int tint = ThemeUtils.elementColor(this);
         DrawableCompat.setTint(mTintedCheck, tint);
 
         setContentView(R.layout.accounts_layout);
 
-        mListView = (ListView) findViewById(R.id.account_list);
+        mListView = findViewById(R.id.account_list);
 
         setupToolbar();
         updateActionBarTitleAndHomeButtonByString(getResources().getString(R.string.prefs_manage_accounts));
 
-        Account[] accountList = AccountManager.get(this).getAccountsByType(MainApp.getAccountType());
+        Account[] accountList = AccountManager.get(this).getAccountsByType(MainApp.getAccountType(this));
         mOriginalAccounts = DisplayUtils.toAccountNameSet(Arrays.asList(accountList));
-        mOriginalCurrentAccount = AccountUtils.getCurrentOwnCloudAccount(this).name;
 
-        setAccount(AccountUtils.getCurrentOwnCloudAccount(this));
+        Account currentAccount = AccountUtils.getCurrentOwnCloudAccount(this);
+
+        if (currentAccount != null) {
+            mOriginalCurrentAccount = currentAccount.name;
+        }
+
+        setAccount(currentAccount);
         onAccountSet(false);
 
         arbitraryDataProvider = new ArbitraryDataProvider(getContentResolver());
@@ -147,12 +154,6 @@ public class ManageAccountsActivity extends FileActivity
         });
 
         initializeComponentGetters();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        AnalyticsUtils.setCurrentScreenName(this, SCREEN_NAME, TAG);
     }
 
     @Override
@@ -190,7 +191,7 @@ public class ManageAccountsActivity extends FileActivity
      * @return true if account list has changed, false if not
      */
     private boolean hasAccountListChanged() {
-        Account[] accountList = AccountManager.get(this).getAccountsByType(MainApp.getAccountType());
+        Account[] accountList = AccountManager.get(this).getAccountsByType(MainApp.getAccountType(this));
 
         ArrayList<Account> newList = new ArrayList<>();
         for (Account account : accountList) {
@@ -215,7 +216,7 @@ public class ManageAccountsActivity extends FileActivity
         if (account == null) {
             return true;
         } else {
-            return !mOriginalCurrentAccount.equals(account.name);
+            return !account.name.equals(mOriginalCurrentAccount);
         }
     }
 
@@ -240,9 +241,9 @@ public class ManageAccountsActivity extends FileActivity
      *
      * @return list of account list items
      */
-    private ArrayList<AccountListItem> getAccountListItems() {
-        Account[] accountList = AccountManager.get(this).getAccountsByType(MainApp.getAccountType());
-        ArrayList<AccountListItem> adapterAccountList = new ArrayList<>(accountList.length);
+    private List<AccountListItem> getAccountListItems() {
+        Account[] accountList = AccountManager.get(this).getAccountsByType(MainApp.getAccountType(this));
+        List<AccountListItem> adapterAccountList = new ArrayList<>(accountList.length);
         for (Account account : accountList) {
             boolean pendingForRemoval = arbitraryDataProvider.getBooleanValue(account, PENDING_FOR_REMOVAL);
             adapterAccountList.add(new AccountListItem(account, !pendingForRemoval));
@@ -271,9 +272,16 @@ public class ManageAccountsActivity extends FileActivity
     }
 
     @Override
+    public void showFirstRunActivity() {
+        Intent firstRunIntent = new Intent(getApplicationContext(), FirstRunActivity.class);
+        firstRunIntent.putExtra(FirstRunActivity.EXTRA_ALLOW_CLOSE, true);
+        startActivity(firstRunIntent);
+    }
+
+    @Override
     public void createAccount() {
         AccountManager am = AccountManager.get(getApplicationContext());
-        am.addAccount(MainApp.getAccountType(),
+        am.addAccount(MainApp.getAccountType(this),
                 null,
                 null,
                 null,
@@ -287,9 +295,9 @@ public class ManageAccountsActivity extends FileActivity
                                 String name = result.getString(AccountManager.KEY_ACCOUNT_NAME);
                                 AccountUtils.setCurrentOwnCloudAccount(getApplicationContext(), name);
                                 mAccountListAdapter = new AccountListAdapter(
-                                    ManageAccountsActivity.this,
-                                    getAccountListItems(),
-                                    mTintedCheck
+                                        ManageAccountsActivity.this,
+                                        getAccountListItems(),
+                                        mTintedCheck
                                 );
                                 mListView.setAdapter(mAccountListAdapter);
                                 runOnUiThread(new Runnable() {
@@ -310,7 +318,7 @@ public class ManageAccountsActivity extends FileActivity
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onAccountRemovedEvent(AccountRemovedEvent event) {
-        ArrayList<AccountListItem> accountListItemArray = getAccountListItems();
+        List<AccountListItem> accountListItemArray = getAccountListItems();
         mAccountListAdapter.clear();
         mAccountListAdapter.addAll(accountListItemArray);
         mAccountListAdapter.notifyDataSetChanged();
@@ -320,7 +328,7 @@ public class ManageAccountsActivity extends FileActivity
     public void run(AccountManagerFuture<Boolean> future) {
         if (future.isDone()) {
             // after remove account
-            Account account = new Account(mAccountName, MainApp.getAccountType());
+            Account account = new Account(mAccountName, MainApp.getAccountType(this));
             if (!AccountUtils.exists(account, MainApp.getAppContext())) {
                 // Cancel transfers of the removed account
                 if (mUploaderBinder != null) {
@@ -333,15 +341,15 @@ public class ManageAccountsActivity extends FileActivity
             
             if (AccountUtils.getCurrentOwnCloudAccount(this) == null) {
                 String accountName = "";
-                Account[] accounts = AccountManager.get(this).getAccountsByType(MainApp.getAccountType());
+                Account[] accounts = AccountManager.get(this).getAccountsByType(MainApp.getAccountType(this));
                 if (accounts.length != 0) {
                     accountName = accounts[0].name;
                 }
                 AccountUtils.setCurrentOwnCloudAccount(this, accountName);
             }
 
-            ArrayList<AccountListItem> accountListItemArray = getAccountListItems();
-            if (accountListItemArray.size() > 1) {
+            List<AccountListItem> accountListItemArray = getAccountListItems();
+            if (accountListItemArray.size() > SINGLE_ACCOUNT) {
                 mAccountListAdapter = new AccountListAdapter(this, accountListItemArray, mTintedCheck);
                 mListView.setAdapter(mAccountListAdapter);
             } else {
@@ -427,7 +435,7 @@ public class ManageAccountsActivity extends FileActivity
                 .schedule();
 
         // immediately select a new account
-        Account[] accounts = AccountManager.get(this).getAccountsByType(MainApp.getAccountType());
+        Account[] accounts = AccountManager.get(this).getAccountsByType(MainApp.getAccountType(this));
 
         String newAccountName = "";
         for (Account acc: accounts) {
@@ -446,7 +454,7 @@ public class ManageAccountsActivity extends FileActivity
         }
 
         // only one to be (deleted) account remaining
-        if (accounts.length < 2) {
+        if (accounts.length < MIN_MULTI_ACCOUNT_SIZE) {
             Intent resultIntent = new Intent();
             resultIntent.putExtra(KEY_ACCOUNT_LIST_CHANGED, true);
             resultIntent.putExtra(KEY_CURRENT_ACCOUNT_CHANGED, true);

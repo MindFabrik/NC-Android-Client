@@ -71,7 +71,7 @@ New contributions are added under AGPL version 3.
 We are all about quality while not sacrificing speed so we use a very pragmatic workflow.
 
 * create an issue with feature request
-    * discuss it with other developers 
+    * discuss it with other developers
     * create mockup if necessary
     * must be approved --> label approved
     * after that no conceptual changes!
@@ -99,8 +99,8 @@ Our formatter setup is rather simple:
 ### Build variants
 There are three build variants
 * generic: no Google Stuff, used for FDroid
-* gplay: with Google Stuff (Push notification) and Analytics disabled, used for Google Play Store
-* modified: custom, with Google Stuff and Analytics enabled, used for branded releases
+* gplay: with Google Stuff (Push notification), used for Google Play Store
+* versionDev: based on master and library master, available as direct download and FDroid
 
 ## Contribution process
 * Contribute your code in the branch 'master'. It will give us a better chance to test your code before merging it with stable code.
@@ -127,6 +127,13 @@ To make sure your new pull request does not contain commits which are already co
 * Push branch to server: ```git push -u origin name_of_local_master_branch```
 * Use GitHub to issue PR
 
+### 4. Backport pull request:
+If some pull request is worth to backport to a dot release, label it as "backport-request".
+
+* create a new branch based on latest stable branch
+* git cherry-pick commits from origin pull request
+* create pull request on github with "Backport of #originPullRequest: description"
+* remove label "backport-request" from origin pull request
 
 ## Translations
 We manage translations via [Transifex](https://www.transifex.com/nextcloud/nextcloud/android/). So just request joining the translation team for Android on the site and start translating. All translations will then be automatically pushed to this repository, there is no need for any pull request for translations.
@@ -134,7 +141,7 @@ We manage translations via [Transifex](https://www.transifex.com/nextcloud/nextc
 # Releases
 At the moment we are releasing the app in two app stores:
 
-* [Google Play Store](https://play.google.com/store/apps/details?id=com.nextcloud.client)
+* [Google Play Store](https://play.google.com/store/apps/details?id=de.mindfabrik.nextcloud.mfdev)
 * [f-droid](https://f-droid.org/repository/browse/?fdfilter=com.nextcloud)
 
 
@@ -143,17 +150,17 @@ We do differentiate between three different kinds of releases:
 
 ### Stable
 Play store and f-droid releases for the masses.
-Pull Requests that have been tested and reviewed can go to master. After the last release candidate is out in the wild for ~2 weeks and no errors get reported (by users or in the developer console) the master branch is ready for the stable release. 
+Pull Requests that have been tested and reviewed can go to master. After the last release candidate is out in the wild for ~2 weeks and no errors get reported (by users or in the developer console) the master branch is ready for the stable release.
 So when we decide to go for a new release we freeze the master feature wise.
 
 ### Release Candidate
 _stable beta_ releases done via the Beta program of the Google Play store and f-droid.
 Whenever a PR is reviewed/approved we put it on master.
-Before releasing a new stable version there is at least one release candidate. It is based on the current master and during this phase the master is feature freezed. After ~2 weeks with no error a stable version will be releaded, which is identically to the latest release candidate. 
+Before releasing a new stable version there is at least one release candidate. It is based on the current master and during this phase the master is feature freezed. After ~2 weeks with no error a stable version will be released, which is identical to the latest release candidate. 
 
 ### Dev
 Done as a standalone app that can be installed in parallel to the stable app.
-Any PR which is labelled "ready for dev" will be automatically included in the dev app. This label should only set by the main developers. 
+Any PR which is labelled "ready for dev" will be automatically included in the dev app. This label should only set by the main developers.
 Same applies for the android-library. This repository also has a branch called dev which includes all upcoming features. The dev branch on this repository must always use the android-library dev branch.
 
 ## Version Name and number
@@ -178,11 +185,11 @@ beware, that beta releases for an upcoming version will always use the minor and
 For dev the version name is in format YYYYMMDD. It is mainly as a reference for reporting bugs and is not related to stable/release candidates as it is an independent app.
 
 ## Release cycle
-* for each release we choose several PRs that will be included in the next release. Currently there are many open PRs from ownCloud, but after merging them, the intention is to choose the PRs that are ready (reviewed, tested) to get them merged very soon.
-* these will be merged into master, tested heavily, maybe automatic testing
+* Releases are planned every ~2 months, with 6 weeks of developing and 2 weeks of stabilising
 * after feature freeze a public release candidate on play store and f-droid is released
 * ~2 weeks testing, bug fixing
 * release final version on f-droid and play store
+* Bugfix releases (dot releases, e.g. 3.2.1) are released on demand from the branch created with first stable release (stable-3.2.x). If changes to the library are required, we do the same: create a branch from the version used in stable release (e.g. 1.1.0) and then release a dot release (1.1.1).
 
 To get an idea which PRs and issues will be part of the next release simply check our [milestone plan](https://github.com/nextcloud/android/milestones)
 

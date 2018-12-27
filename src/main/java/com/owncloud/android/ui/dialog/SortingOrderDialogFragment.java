@@ -48,7 +48,7 @@ public class SortingOrderDialogFragment extends DialogFragment {
     public static final String SORTING_ORDER_FRAGMENT = "SORTING_ORDER_FRAGMENT";
     private static final String KEY_SORT_ORDER = "SORT_ORDER";
 
-    private View mView = null;
+    private View mView;
     private View[] mTaggedViews;
     private AppCompatButton mCancel;
     private String mCurrentSortOrderName;
@@ -57,7 +57,7 @@ public class SortingOrderDialogFragment extends DialogFragment {
         SortingOrderDialogFragment dialogFragment = new SortingOrderDialogFragment();
 
         Bundle args = new Bundle();
-        args.putString(KEY_SORT_ORDER, sortOrder.mName);
+        args.putString(KEY_SORT_ORDER, sortOrder.name);
         dialogFragment.setArguments(args);
 
         dialogFragment.setStyle(STYLE_NORMAL, R.style.Theme_ownCloud_Dialog);
@@ -72,7 +72,7 @@ public class SortingOrderDialogFragment extends DialogFragment {
         setRetainInstance(true);
 
         mView = null;
-        mCurrentSortOrderName = getArguments().getString(KEY_SORT_ORDER, FileSortOrder.sort_a_to_z.mName);
+        mCurrentSortOrderName = getArguments().getString(KEY_SORT_ORDER, FileSortOrder.sort_a_to_z.name);
     }
 
     @Override
@@ -94,7 +94,7 @@ public class SortingOrderDialogFragment extends DialogFragment {
      */
     private void setupDialogElements(View view) {
         mCancel = view.findViewById(R.id.cancel);
-        mCancel.setTextColor(ThemeUtils.primaryAccentColor());
+        mCancel.setTextColor(ThemeUtils.primaryAccentColor(getContext()));
 
         mTaggedViews = new View[12];
         mTaggedViews[0] = view.findViewById(R.id.sortByNameAscending);
@@ -129,9 +129,9 @@ public class SortingOrderDialogFragment extends DialogFragment {
      * tints the icon reflecting the actual sorting choice in the apps primary color.
      */
     private void setupActiveOrderSelection() {
-        final int color = ThemeUtils.primaryAccentColor();
+        final int color = ThemeUtils.primaryAccentColor(getContext());
         for (View view: mTaggedViews) {
-            if (!((FileSortOrder)view.getTag()).mName.equals(mCurrentSortOrderName)) {
+            if (!((FileSortOrder) view.getTag()).name.equals(mCurrentSortOrderName)) {
                 continue;
             }
             if (view instanceof ImageButton) {

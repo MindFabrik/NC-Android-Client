@@ -34,17 +34,13 @@ import android.widget.TextView;
 
 import com.owncloud.android.R;
 import com.owncloud.android.lib.common.utils.Log_OC;
-import com.owncloud.android.utils.AnalyticsUtils;
 
 import java.io.File;
 
 public class ManageSpaceActivity extends AppCompatActivity {
 
     private static final String TAG = ManageSpaceActivity.class.getSimpleName();
-
     private static final String LIB_FOLDER = "lib";
-
-    private static final String SCREEN_NAME = "Manage space";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,10 +51,10 @@ public class ManageSpaceActivity extends AppCompatActivity {
         actionBar.setDisplayHomeAsUpEnabled(true);
         actionBar.setTitle(R.string.manage_space_title);
 
-        TextView descriptionTextView = (TextView) findViewById(R.id.general_description);
+        TextView descriptionTextView = findViewById(R.id.general_description);
         descriptionTextView.setText(getString(R.string.manage_space_description, getString(R.string.app_name)));
 
-        Button clearDataButton = (Button) findViewById(R.id.clearDataButton);
+        Button clearDataButton = findViewById(R.id.clearDataButton);
         clearDataButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -66,13 +62,6 @@ public class ManageSpaceActivity extends AppCompatActivity {
                 clearDataTask.execute();
             }
         });
-    }
-
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        AnalyticsUtils.setCurrentScreenName(this, SCREEN_NAME, TAG);
     }
 
     @Override
@@ -98,13 +87,13 @@ public class ManageSpaceActivity extends AppCompatActivity {
         @Override
         protected Boolean doInBackground(Void... params) {
 
-            boolean result = true;
-
             // Save passcode from Share preferences
             SharedPreferences appPrefs = PreferenceManager
                     .getDefaultSharedPreferences(getApplicationContext());
 
-            boolean passCodeEnable = appPrefs.getBoolean(PassCodeActivity.PREFERENCE_SET_PASSCODE, false);
+            String lockPref = appPrefs.getString(Preferences.PREFERENCE_LOCK, Preferences.LOCK_NONE);
+            boolean passCodeEnable = Preferences.LOCK_PASSCODE.equals(
+                    appPrefs.getString(Preferences.PREFERENCE_LOCK, ""));
 
             String passCodeDigits[] = new String[4];
             if (passCodeEnable) {
@@ -115,8 +104,7 @@ public class ManageSpaceActivity extends AppCompatActivity {
             }
 
             // Clear data
-            result = clearApplicationData();
-
+            boolean result = clearApplicationData();
 
             // Clear SharedPreferences
             SharedPreferences.Editor appPrefsEditor = PreferenceManager
@@ -132,7 +120,7 @@ public class ManageSpaceActivity extends AppCompatActivity {
                 appPrefsEditor.putString(PassCodeActivity.PREFERENCE_PASSCODE_D4, passCodeDigits[3]);
             }
 
-            appPrefsEditor.putBoolean(PassCodeActivity.PREFERENCE_SET_PASSCODE, passCodeEnable);
+            appPrefsEditor.putString(Preferences.PREFERENCE_LOCK, lockPref);
             result = result && appPrefsEditor.commit();
 
             return result;
@@ -178,13 +166,13 @@ public class ManageSpaceActivity extends AppCompatActivity {
             if (dir != null && dir.isDirectory()) {
                 String[] children = dir.list();
                 if (children != null) {
-                    for (int i = 0; i < children.length; i++) {
-                        boolean success = deleteDir(new File(dir, children[i]));
+                    for (String child : children) {
+                        boolean success = deleteDir(new File(dir, child));
                         if (!success) {
-                            Log_OC.w(TAG, "File NOT deleted " + children[i]);
+                            Log_OC.w(TAG, "File NOT deleted " + child);
                             return false;
                         } else {
-                            Log_OC.d(TAG, "File deleted " + children[i]);
+                            Log_OC.d(TAG, "File deleted " + child);
                         }
                     }
                 } else {
@@ -192,7 +180,11 @@ public class ManageSpaceActivity extends AppCompatActivity {
                 }
             }
 
-            return dir.delete();
+            if (dir != null) {
+                return dir.delete();
+            } else {
+                return false;
+            }
         }
     }
 }

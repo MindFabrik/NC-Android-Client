@@ -1,9 +1,11 @@
-/**
+/*
  * Nextcloud Android client application
  *
  * @author Mario Danic
+ * @author Andy Scherzinger
  * Copyright (C) 2017 Mario Danic
  * Copyright (C) 2017 Nextcloud
+ * Copyright (C) 2018 Andy Scherzinger
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -22,96 +24,25 @@ package com.owncloud.android.datamodel;
 
 import android.support.annotation.Nullable;
 
-/*
-    Model for filesystem data from the database
- */
-public class FileSystemDataSet {
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+/**
+ * Model for filesystem data from the database.
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class FileSystemDataSet {
     private int id;
     private String localPath;
     private long modifiedAt;
-    private boolean isFolder;
-    private boolean isSentForUpload;
+    private boolean folder;
+    private boolean sentForUpload;
     private long foundAt;
     private long syncedFolderId;
     @Nullable private String crc32;
-
-    public FileSystemDataSet() {
-    }
-
-    public FileSystemDataSet(int id, String localPath, long modifiedAt, boolean isFolder,
-                             boolean isSentForUpload, long foundAt, long syncedFolderId, @Nullable String crc32) {
-        this.id = id;
-        this.localPath = localPath;
-        this.modifiedAt = modifiedAt;
-        this.isFolder = isFolder;
-        this.isSentForUpload = isSentForUpload;
-        this.foundAt = foundAt;
-        this.syncedFolderId = syncedFolderId;
-        this.crc32 = crc32;
-    }
-
-    public String getCrc32() {
-        return crc32;
-    }
-
-    public void setCrc32(String crc32) {
-        this.crc32 = crc32;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getLocalPath() {
-        return localPath;
-    }
-
-    public void setLocalPath(String localPath) {
-        this.localPath = localPath;
-    }
-
-    public long getModifiedAt() {
-        return modifiedAt;
-    }
-
-    public void setModifiedAt(long modifiedAt) {
-        this.modifiedAt = modifiedAt;
-    }
-
-    public boolean isFolder() {
-        return isFolder;
-    }
-
-    public void setFolder(boolean folder) {
-        isFolder = folder;
-    }
-
-    public long getFoundAt() {
-        return foundAt;
-    }
-
-    public void setFoundAt(long foundAt) {
-        this.foundAt = foundAt;
-    }
-
-    public boolean isSentForUpload() {
-        return isSentForUpload;
-    }
-
-    public void setSentForUpload(boolean sentForUpload) {
-        isSentForUpload = sentForUpload;
-    }
-
-    public long getSyncedFolderId() {
-        return syncedFolderId;
-    }
-
-    public void setSyncedFolderId(long syncedFolderId) {
-        this.syncedFolderId = syncedFolderId;
-    }
 }

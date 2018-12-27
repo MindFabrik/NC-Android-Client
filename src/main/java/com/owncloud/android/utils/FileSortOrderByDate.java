@@ -1,4 +1,4 @@
-/**
+/*
  * Nextcloud Android client application
  *
  * @author Sven R. Kunze
@@ -21,23 +21,18 @@
 package com.owncloud.android.utils;
 
 import com.owncloud.android.datamodel.OCFile;
+import com.owncloud.android.lib.resources.files.TrashbinFile;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * Created by srkunze on 28.08.17.
  */
-
 public class FileSortOrderByDate extends FileSortOrder {
 
-    public FileSortOrderByDate(String name, boolean ascending) {
+    FileSortOrderByDate(String name, boolean ascending) {
         super(name, ascending);
     }
 
@@ -47,15 +42,10 @@ public class FileSortOrderByDate extends FileSortOrder {
      * @param files list of files to sort
      */
     public List<OCFile> sortCloudFiles(List<OCFile> files) {
-        final int multiplier = mAscending ? 1 : -1;
+        final int multiplier = isAscending ? 1 : -1;
 
-        Collections.sort(files, new Comparator<OCFile>() {
-            @SuppressFBWarnings(value = "Bx", justification = "Would require stepping up API level")
-            public int compare(OCFile o1, OCFile o2) {
-                Long obj1 = o1.getModificationTimestamp();
-                return multiplier * obj1.compareTo(o2.getModificationTimestamp());
-            }
-        });
+        Collections.sort(files, (o1, o2) ->
+                multiplier * Long.compare(o1.getModificationTimestamp(), o2.getModificationTimestamp()));
 
         return super.sortCloudFiles(files);
     }
@@ -63,22 +53,31 @@ public class FileSortOrderByDate extends FileSortOrder {
     /**
      * Sorts list by Date.
      *
-     * @param filesArray list of files to sort
+     * @param files list of files to sort
      */
-    public File[] sortLocalFiles(File[] filesArray) {
-        final int multiplier = mAscending ? 1 : -1;
+    @Override
+    public List<TrashbinFile> sortTrashbinFiles(List<TrashbinFile> files) {
+        final int multiplier = isAscending ? 1 : -1;
 
-        List<File> files = new ArrayList<File>(Arrays.asList(filesArray));
-
-        Collections.sort(files, new Comparator<File>() {
-            @SuppressFBWarnings(value = "Bx")
-            public int compare(File o1, File o2) {
-                Long obj1 = o1.lastModified();
-                return multiplier * obj1.compareTo(o2.lastModified());
-            }
+        Collections.sort(files, (o1, o2) -> {
+            Long obj1 = o1.getDeletionTimestamp();
+            return multiplier * obj1.compareTo(o2.getDeletionTimestamp());
         });
 
-        File[] returnArray = new File[files.size()];
-        return files.toArray(returnArray);
+        return super.sortTrashbinFiles(files);
+    }
+
+    /**
+     * Sorts list by Date.
+     *
+     * @param files list of files to sort
+     */
+    @Override
+    public List<File> sortLocalFiles(List<File> files) {
+        final int multiplier = isAscending ? 1 : -1;
+
+        Collections.sort(files, (o1, o2) -> multiplier * Long.compare(o1.lastModified(),o2.lastModified()));
+
+        return files;
     }
 }

@@ -22,7 +22,7 @@
 package com.owncloud.android.ui.adapter;
 
 import android.content.Context;
-import android.support.annotation.Nullable;
+import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,6 +43,7 @@ import com.owncloud.android.utils.ThemeUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -50,7 +51,7 @@ import butterknife.ButterKnife;
 /**
  * Adapter to display all auto-synced folders and/or instant upload media folders.
  */
-public class SyncedFolderAdapter extends SectionedRecyclerViewAdapter<SyncedFolderAdapter.MainViewHolder> {
+public class SyncedFolderAdapter extends SectionedRecyclerViewAdapter<SectionedViewHolder> {
 
     private final Context mContext;
     private final int mGridWidth;
@@ -97,7 +98,9 @@ public class SyncedFolderAdapter extends SectionedRecyclerViewAdapter<SyncedFold
 
     @Override
     public int getItemCount(int section) {
-        if (mSyncFolderItems.get(section).getFilePaths() != null) {
+        List<String> filePaths = mSyncFolderItems.get(section).getFilePaths();
+
+        if (filePaths != null) {
             return mSyncFolderItems.get(section).getFilePaths().size();
         } else {
             return 1;
@@ -108,8 +111,28 @@ public class SyncedFolderAdapter extends SectionedRecyclerViewAdapter<SyncedFold
         return mSyncFolderItems.get(section);
     }
 
+    /**
+     * returns the section of a synced folder for the given local path and type.
+     *
+     * @param localPath the local path of the synced folder
+     * @param type      the of the synced folder
+     * @return the section index of the looked up synced folder, <code>-1</code> if not present
+     */
+    public int getSectionByLocalPathAndType(String localPath, int type) {
+        for (int i = 0; i < mSyncFolderItems.size(); i++) {
+            if (mSyncFolderItems.get(i).getLocalPath().equalsIgnoreCase(localPath) &&
+                    mSyncFolderItems.get(i).getType().getId().equals(type)) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
     @Override
-    public void onBindHeaderViewHolder(final MainViewHolder holder, final int section, boolean expanded) {
+    public void onBindHeaderViewHolder(SectionedViewHolder commonHolder, final int section, boolean expanded) {
+        HeaderViewHolder holder = (HeaderViewHolder) commonHolder;
+
         holder.mainHeaderContainer.setVisibility(View.VISIBLE);
 
         holder.title.setText(mSyncFolderItems.get(section).getFolderName());
@@ -151,18 +174,21 @@ public class SyncedFolderAdapter extends SectionedRecyclerViewAdapter<SyncedFold
     }
 
     @Override
-    public void onBindFooterViewHolder(MainViewHolder holder, int section) {
+    public void onBindFooterViewHolder(SectionedViewHolder holder, int section) {
         // not needed
     }
 
 
     @Override
-    public void onBindViewHolder(MainViewHolder holder, int section, int relativePosition, int absolutePosition) {
+    public void onBindViewHolder(SectionedViewHolder commonHolder, int section, int relativePosition,
+                                 int absolutePosition) {
         if (mSyncFolderItems.get(section).getFilePaths() != null) {
+            MainViewHolder holder = (MainViewHolder) commonHolder;
+
             File file = new File(mSyncFolderItems.get(section).getFilePaths().get(relativePosition));
 
             ThumbnailsCacheManager.MediaThumbnailGenerationTask task =
-                    new ThumbnailsCacheManager.MediaThumbnailGenerationTask(holder.image);
+                    new ThumbnailsCacheManager.MediaThumbnailGenerationTask(holder.image, mContext);
 
             ThumbnailsCacheManager.AsyncMediaThumbnailDrawable asyncDrawable =
                     new ThumbnailsCacheManager.AsyncMediaThumbnailDrawable(
@@ -180,7 +206,8 @@ public class SyncedFolderAdapter extends SectionedRecyclerViewAdapter<SyncedFold
             holder.itemView.setTag(relativePosition % mGridWidth);
 
             if (mSyncFolderItems.get(section).getNumberOfFiles() > mGridTotal && relativePosition >= mGridTotal - 1) {
-                holder.counterValue.setText(Long.toString(mSyncFolderItems.get(section).getNumberOfFiles() - mGridTotal));
+                holder.counterValue.setText(String.format(Locale.US, "%d",
+                    mSyncFolderItems.get(section).getNumberOfFiles() - mGridTotal));
                 holder.counterBar.setVisibility(View.VISIBLE);
                 holder.thumbnailDarkener.setVisibility(View.VISIBLE);
             } else {
@@ -190,12 +217,16 @@ public class SyncedFolderAdapter extends SectionedRecyclerViewAdapter<SyncedFold
         }
     }
 
+    @NonNull
     @Override
-    public MainViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext()).inflate(
-                viewType == VIEW_TYPE_HEADER ?
-                        R.layout.synced_folders_item_header : R.layout.grid_sync_item, parent, false);
-        return new MainViewHolder(v);
+    public SectionedViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == VIEW_TYPE_HEADER) {
+            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.synced_folders_item_header, parent, false);
+            return new HeaderViewHolder(v);
+        } else {
+            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.grid_sync_item, parent, false);
+            return new MainViewHolder(v);
+        }
     }
 
     public interface ClickListener {
@@ -203,42 +234,40 @@ public class SyncedFolderAdapter extends SectionedRecyclerViewAdapter<SyncedFold
         void onSyncFolderSettingsClick(int section, SyncedFolderDisplayItem syncedFolderDisplayItem);
     }
 
-    static class MainViewHolder extends SectionedViewHolder {
-        @Nullable
-        @BindView(R.id.thumbnail)
-        public ImageView image;
+    static class HeaderViewHolder extends SectionedViewHolder {
+        @BindView(R.id.header_container)
+        public RelativeLayout mainHeaderContainer;
 
-        @Nullable
-        @BindView(R.id.title)
-        public TextView title;
-
-        @Nullable
         @BindView(R.id.type)
         public ImageView type;
 
-        @Nullable
-        @BindView(R.id.settingsButton)
-        public ImageButton menuButton;
+        @BindView(R.id.title)
+        public TextView title;
 
-        @Nullable
         @BindView(R.id.syncStatusButton)
         public ImageButton syncStatusButton;
 
-        @Nullable
+        @BindView(R.id.settingsButton)
+        public ImageButton menuButton;
+
+        private HeaderViewHolder(View itemView) {
+            super(itemView);
+            ButterKnife.bind(this, itemView);
+        }
+    }
+
+    static class MainViewHolder extends SectionedViewHolder {
+        @BindView(R.id.thumbnail)
+        public ImageView image;
+
         @BindView(R.id.counterLayout)
         public LinearLayout counterBar;
 
-        @Nullable
         @BindView(R.id.counter)
         public TextView counterValue;
 
-        @Nullable
         @BindView(R.id.thumbnailDarkener)
         public ImageView thumbnailDarkener;
-
-        @Nullable
-        @BindView(R.id.header_container)
-        public RelativeLayout mainHeaderContainer;
 
         private MainViewHolder(View itemView) {
             super(itemView);
@@ -249,7 +278,7 @@ public class SyncedFolderAdapter extends SectionedRecyclerViewAdapter<SyncedFold
     private void setSyncButtonActiveIcon(ImageButton syncStatusButton, boolean enabled) {
         if (enabled) {
             syncStatusButton.setImageDrawable(ThemeUtils.tintDrawable(R.drawable.ic_cloud_sync_on,
-                    ThemeUtils.primaryColor()));
+                    ThemeUtils.primaryColor(mContext)));
         } else {
             syncStatusButton.setImageResource(R.drawable.ic_cloud_sync_off);
         }

@@ -42,10 +42,10 @@ public class CustomEditText extends android.support.v7.widget.AppCompatEditText 
 
         String serverInputType = getResources().getString(R.string.server_input_type);
 
-        if (serverInputType.equals(AuthenticatorActivity.DIRECTORY_SERVER_INPUT_TYPE)) {
+        if (AuthenticatorActivity.DIRECTORY_SERVER_INPUT_TYPE.equals(serverInputType)) {
             isPrefixFixed = true;
             fixedText = getResources().getString(R.string.server_url) + "/";
-        } else if (serverInputType.equals(AuthenticatorActivity.SUBDOMAIN_SERVER_INPUT_TYPE)) {
+        } else if (AuthenticatorActivity.SUBDOMAIN_SERVER_INPUT_TYPE.equals(serverInputType)) {
             isPrefixFixed = false;
             fixedText = "." + getResources().getString(R.string.server_url);
         }
@@ -61,9 +61,9 @@ public class CustomEditText extends android.support.v7.widget.AppCompatEditText 
                 || getText().toString().startsWith(AuthenticatorActivity.HTTPS_PROTOCOL)) {
             return getText().toString();
         } else if (isPrefixFixed) {
-            return (getResources().getString(R.string.server_url) + "/" + getText().toString());
+            return getResources().getString(R.string.server_url) + "/" + getText().toString();
         } else {
-            return (getText().toString() + "." + getResources().getString(R.string.server_url));
+            return getText().toString() + "." + getResources().getString(R.string.server_url);
         }
     }
 

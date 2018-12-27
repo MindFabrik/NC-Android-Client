@@ -1,4 +1,4 @@
-/**
+/*
  * ownCloud Android client application
  * <p>
  * Copyright (C) 2016 ownCloud Inc.
@@ -19,14 +19,16 @@
 package com.owncloud.android.utils;
 
 import android.accounts.Account;
+import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.support.v4.content.ContextCompat;
 import android.webkit.MimeTypeMap;
 
-import com.owncloud.android.MainApp;
 import com.owncloud.android.R;
 import com.owncloud.android.datamodel.OCFile;
 import com.owncloud.android.lib.common.network.WebdavEntry;
+import com.owncloud.android.lib.resources.files.ServerFileInterface;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -36,6 +38,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 /**
  * <p>Helper class for detecting the right icon for a file or folder,
@@ -60,7 +64,7 @@ import java.util.Map;
  * </ol>
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public class MimeTypeUtil {
+public final class MimeTypeUtil {
     /** Mapping: icon for mime type */
     private static final Map<String, Integer> MIMETYPE_TO_ICON_MAPPING = new HashMap<>();
     /** Mapping: icon for main mime type (first part of a mime type declaration). */
@@ -74,6 +78,10 @@ public class MimeTypeUtil {
         populateMainMimeTypeMapping();
     }
 
+    private MimeTypeUtil() {
+        // utility class -> private constructor
+    }
+
     /**
      * Returns the Drawable of an image to use as icon associated to a known MIME type.
      *
@@ -81,8 +89,8 @@ public class MimeTypeUtil {
      * @param filename Name, with extension.
      * @return Drawable of an image resource.
      */
-    public static Drawable getFileTypeIcon(String mimetype, String filename) {
-        return getFileTypeIcon(mimetype, filename, null);
+    public static Drawable getFileTypeIcon(String mimetype, String filename, Context context) {
+        return getFileTypeIcon(mimetype, filename, null, context);
     }
 
     /**
@@ -93,15 +101,20 @@ public class MimeTypeUtil {
      * @param account account which color should be used
      * @return Drawable of an image resource.
      */
-    public static Drawable getFileTypeIcon(String mimetype, String filename, Account account) {
-        int iconId = MimeTypeUtil.getFileTypeIconId(mimetype, filename);
-        Drawable icon = MainApp.getAppContext().getResources().getDrawable(iconId);
+    @Nullable
+    public static Drawable getFileTypeIcon(String mimetype, String filename, Account account, Context context) {
+        if (context != null) {
+            int iconId = MimeTypeUtil.getFileTypeIconId(mimetype, filename);
+            Drawable icon = ContextCompat.getDrawable(context, iconId);
 
-        if(R.drawable.file_zip == iconId) {
-            ThemeUtils.tintDrawable(icon, ThemeUtils.primaryColor(account));
+            if (R.drawable.file_zip == iconId) {
+                ThemeUtils.tintDrawable(icon, ThemeUtils.primaryColor(account, true, context));
+            }
+
+            return icon;
+        } else {
+            return null;
         }
-
-        return icon;
     }
 
     /**
@@ -130,8 +143,8 @@ public class MimeTypeUtil {
      * @return Identifier of an image resource.
      */
     public static Drawable getFolderTypeIcon(boolean isSharedViaUsers, boolean isSharedViaLink, boolean isEncrypted,
-                                             WebdavEntry.MountType mountType) {
-        return getFolderTypeIcon(isSharedViaUsers, isSharedViaLink, isEncrypted, null, mountType);
+                                             WebdavEntry.MountType mountType, Context context) {
+        return getFolderTypeIcon(isSharedViaUsers, isSharedViaLink, isEncrypted, null, mountType, context);
     }
 
     /**
@@ -144,7 +157,8 @@ public class MimeTypeUtil {
      * @return Identifier of an image resource.
      */
     public static Drawable getFolderTypeIcon(boolean isSharedViaUsers, boolean isSharedViaLink,
-                                             boolean isEncrypted, Account account, WebdavEntry.MountType mountType) {
+                                             boolean isEncrypted, Account account, WebdavEntry.MountType mountType,
+                                             Context context) {
         int drawableId;
 
         if (isSharedViaLink) {
@@ -159,11 +173,16 @@ public class MimeTypeUtil {
             drawableId = R.drawable.folder;
         }
 
-        return ThemeUtils.tintDrawable(drawableId, ThemeUtils.elementColor(account));
+        //Change-MindFabrik-Start
+        drawableId = R.drawable.folder;
+        //Change-MindFabrik-End
+
+
+        return ThemeUtils.tintDrawable(drawableId, ThemeUtils.elementColor(account, context));
     }
 
-    public static Drawable getDefaultFolderIcon() {
-        return getFolderTypeIcon(false, false, false, WebdavEntry.MountType.INTERNAL);
+    public static Drawable getDefaultFolderIcon(Context context) {
+        return getFolderTypeIcon(false, false, false, WebdavEntry.MountType.INTERNAL, context);
     }
 
 
@@ -186,29 +205,29 @@ public class MimeTypeUtil {
      * @return 'True' if the mime type defines image
      */
     public static boolean isImage(String mimeType) {
-        return (mimeType != null && mimeType.toLowerCase(Locale.ROOT).startsWith("image/") &&
-                !mimeType.toLowerCase(Locale.ROOT).contains("djvu"));
+        return mimeType != null && mimeType.toLowerCase(Locale.ROOT).startsWith("image/") &&
+                !mimeType.toLowerCase(Locale.ROOT).contains("djvu");
     }
 
     /**
      * @return 'True' the mime type defines video
      */
     public static boolean isVideo(String mimeType) {
-        return (mimeType != null && mimeType.toLowerCase(Locale.ROOT).startsWith("video/"));
+        return mimeType != null && mimeType.toLowerCase(Locale.ROOT).startsWith("video/");
     }
 
     /**
      * @return 'True' the mime type defines audio
      */
     public static boolean isAudio(String mimeType) {
-        return (mimeType != null && mimeType.toLowerCase(Locale.ROOT).startsWith("audio/"));
+        return mimeType != null && mimeType.toLowerCase(Locale.ROOT).startsWith("audio/");
     }
 
     /**
      * @return 'True' if mime type defines text
      */
     public static boolean isText(String mimeType) {
-        return (mimeType != null && mimeType.toLowerCase(Locale.ROOT).startsWith("text/"));
+        return mimeType != null && mimeType.toLowerCase(Locale.ROOT).startsWith("text/");
     }
 
     /**
@@ -239,7 +258,7 @@ public class MimeTypeUtil {
     }
 
     public static boolean isSVG(OCFile file) {
-        return "image/svg+xml".equalsIgnoreCase(file.getMimetype());
+        return "image/svg+xml".equalsIgnoreCase(file.getMimeType());
     }
 
     /**
@@ -247,24 +266,24 @@ public class MimeTypeUtil {
      * @return 'True' if the file contains audio
      */
     public static boolean isAudio(OCFile file) {
-        return MimeTypeUtil.isAudio(file.getMimetype());
+        return MimeTypeUtil.isAudio(file.getMimeType());
     }
 
     /**
      * @param file the file to be analyzed
      * @return 'True' if the file contains video
      */
-    public static boolean isVideo(OCFile file) {
-        return MimeTypeUtil.isVideo(file.getMimetype());
+    public static boolean isVideo(ServerFileInterface file) {
+        return MimeTypeUtil.isVideo(file.getMimeType());
     }
 
     /**
      * @param file the file to be analyzed
      * @return 'True' if the file contains an image
      */
-    public static boolean isImage(OCFile file) {
-        return (MimeTypeUtil.isImage(file.getMimetype())
-                || MimeTypeUtil.isImage(getMimeTypeFromPath(file.getRemotePath())));
+    public static boolean isImage(ServerFileInterface file) {
+        return MimeTypeUtil.isImage(file.getMimeType())
+                || MimeTypeUtil.isImage(getMimeTypeFromPath(file.getRemotePath()));
     }
 
     /**
@@ -272,17 +291,16 @@ public class MimeTypeUtil {
      * @return 'True' if the file is simple text (e.g. not application-dependent, like .doc or .docx)
      */
     public static boolean isText(OCFile file) {
-        return (MimeTypeUtil.isText(file.getMimetype())
-                || MimeTypeUtil.isText(getMimeTypeFromPath(file.getRemotePath())));
+        return MimeTypeUtil.isText(file.getMimeType())
+                || MimeTypeUtil.isText(getMimeTypeFromPath(file.getRemotePath()));
     }
-
 
     /**
      * @param file the file to be analyzed
      * @return 'True' if the file is a vcard
      */
     public static boolean isVCard(OCFile file) {
-        return isVCard(file.getMimetype()) || isVCard(getMimeTypeFromPath(file.getRemotePath()));
+        return isVCard(file.getMimeType()) || isVCard(getMimeTypeFromPath(file.getRemotePath()));
     }
 
     /**
@@ -531,8 +549,8 @@ public class MimeTypeUtil {
         FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("flac", Collections.singletonList("audio/flac"));
         FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("flv", Collections.singletonList("video/x-flv"));
         FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("gif", Collections.singletonList("image/gif"));
-        FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("gz", Collections.singletonList("application/x-gzip"));
-        FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("gzip", Collections.singletonList("application/x-gzip"));
+        FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("gz", Collections.singletonList("application/gzip"));
+        FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("gzip", Collections.singletonList("application/gzip"));
         FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("h", Collections.singletonList("text/x-h"));
         FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("hh", Collections.singletonList("text/x-h"));
         FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("html", Arrays.asList("text/html", "text/plain"));
@@ -618,7 +636,6 @@ public class MimeTypeUtil {
         FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("svg", Arrays.asList("image/svg+xml", "text/plain"));
         FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("swf", Arrays.asList("application/x-shockwave-flash", "application/octet-stream"));
         FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("tar", Collections.singletonList("application/x-tar"));
-        FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("gz", Collections.singletonList("application/x-compressed"));
         FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("tex", Collections.singletonList("application/x-tex"));
         FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("tgz", Collections.singletonList("application/x-compressed"));
         FILE_EXTENSION_TO_MIMETYPE_MAPPING.put("tiff", Collections.singletonList("image/tiff"));

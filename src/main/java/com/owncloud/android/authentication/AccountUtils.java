@@ -15,7 +15,6 @@
  *
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
 package com.owncloud.android.authentication;
@@ -30,30 +29,31 @@ import android.support.annotation.Nullable;
 
 import com.owncloud.android.MainApp;
 import com.owncloud.android.datamodel.ArbitraryDataProvider;
-import com.owncloud.android.datamodel.FileDataStorageManager;
 import com.owncloud.android.lib.common.accounts.AccountUtils.Constants;
-import com.owncloud.android.lib.common.operations.RemoteOperationResult;
-import com.owncloud.android.lib.common.utils.Log_OC;
 import com.owncloud.android.lib.resources.status.OwnCloudVersion;
-import com.owncloud.android.operations.GetCapabilitiesOperarion;
 import com.owncloud.android.ui.activity.ManageAccountsActivity;
 
-import java.util.Locale;
-
-public class AccountUtils {
-    private static final String TAG = AccountUtils.class.getSimpleName();
+/**
+ * Helper class for dealing with accounts.
+ */
+public final class AccountUtils {
+    private static final String PREF_SELECT_OC_ACCOUNT = "select_oc_account";
 
     public static final int ACCOUNT_VERSION = 1;
-    public static final int ACCOUNT_VERSION_WITH_PROPER_ID = 2;
+    //public static final int ACCOUNT_VERSION_WITH_PROPER_ID = 2;
     public static final String ACCOUNT_USES_STANDARD_PASSWORD = "ACCOUNT_USES_STANDARD_PASSWORD";
+
+    private AccountUtils() {
+        // Required empty constructor
+    }
 
     /**
      * Can be used to get the currently selected ownCloud {@link Account} in the
      * application preferences.
-     * 
+     *
      * @param   context     The current application {@link Context}
-     * @return              The ownCloud {@link Account} currently saved in preferences, or the first 
-     *                      {@link Account} available, if valid (still registered in the system as ownCloud 
+     * @return The ownCloud {@link Account} currently saved in preferences, or the first
+     *                      {@link Account} available, if valid (still registered in the system as ownCloud
      *                      account). If none is available and valid, returns null.
      */
     public static @Nullable Account getCurrentOwnCloudAccount(Context context) {
@@ -63,7 +63,7 @@ public class AccountUtils {
         ArbitraryDataProvider arbitraryDataProvider = new ArbitraryDataProvider(context.getContentResolver());
 
         SharedPreferences appPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        String accountName = appPreferences.getString("select_oc_account", null);
+        String accountName = appPreferences.getString(PREF_SELECT_OC_ACCOUNT, null);
 
         // account validation: the saved account MUST be in the list of ownCloud Accounts known by the AccountManager
         if (accountName != null) {
@@ -93,27 +93,25 @@ public class AccountUtils {
 
     public static Account[] getAccounts(Context context) {
         AccountManager accountManager = AccountManager.get(context);
-        return accountManager.getAccountsByType(MainApp.getAccountType());
+        return accountManager.getAccountsByType(MainApp.getAccountType(context));
     }
 
-    
+
     public static boolean exists(Account account, Context context) {
         Account[] ocAccounts = getAccounts(context);
 
         if (account != null && account.name != null) {
-            int lastAtPos = account.name.lastIndexOf("@");
+            int lastAtPos = account.name.lastIndexOf('@');
             String hostAndPort = account.name.substring(lastAtPos + 1);
             String username = account.name.substring(0, lastAtPos);
             String otherHostAndPort;
             String otherUsername;
-            Locale currentLocale = context.getResources().getConfiguration().locale;
             for (Account otherAccount : ocAccounts) {
-                lastAtPos = otherAccount.name.lastIndexOf("@");
+                lastAtPos = otherAccount.name.lastIndexOf('@');
                 otherHostAndPort = otherAccount.name.substring(lastAtPos + 1);
                 otherUsername = otherAccount.name.substring(0, lastAtPos);
                 if (otherHostAndPort.equals(hostAndPort) &&
-                        otherUsername.toLowerCase(currentLocale).
-                            equals(username.toLowerCase(currentLocale))) {
+                        otherUsername.equalsIgnoreCase(username)) {
                     return true;
                 }
             }
@@ -134,7 +132,7 @@ public class AccountUtils {
             return null;
         }
     }
-    
+
     /**
      * Returns owncloud account identified by accountName or null if it does not exist.
      * @param context the context
@@ -142,8 +140,7 @@ public class AccountUtils {
      * @return owncloud account named accountName
      */
     public static Account getOwnCloudAccountByName(Context context, String accountName) {
-        Account[] ocAccounts = AccountManager.get(context).getAccountsByType(
-                MainApp.getAccountType());
+        Account[] ocAccounts = AccountManager.get(context).getAccountsByType(MainApp.getAccountType(context));
         for (Account account : ocAccounts) {
             if(account.name.equals(accountName)) {
                 return account;
@@ -156,27 +153,10 @@ public class AccountUtils {
     public static boolean setCurrentOwnCloudAccount(final Context context, String accountName) {
         boolean result = false;
         if (accountName != null) {
-            boolean found;
             for (final Account account : getAccounts(context)) {
-                found = (account.name.equals(accountName));
-                if (found) {
+                if (accountName.equals(account.name)) {
                     SharedPreferences.Editor appPrefs = PreferenceManager.getDefaultSharedPreferences(context).edit();
-                    appPrefs.putString("select_oc_account", accountName);
-
-                    // update credentials
-                    Thread t = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            FileDataStorageManager storageManager = new FileDataStorageManager(account,
-                                    context.getContentResolver());
-                            GetCapabilitiesOperarion getCapabilities = new GetCapabilitiesOperarion();
-                            RemoteOperationResult updateResult = getCapabilities.execute(storageManager, context);
-                            Log_OC.w(TAG, "Update Capabilities: " + updateResult.isSuccess());
-                        }
-                    });
-
-                    t.start();
-
+                    appPrefs.putString(PREF_SELECT_OC_ACCOUNT, accountName);
                     appPrefs.apply();
                     result = true;
                     break;
@@ -188,7 +168,7 @@ public class AccountUtils {
 
     public static void resetOwnCloudAccount(Context context) {
         SharedPreferences.Editor appPrefs = PreferenceManager.getDefaultSharedPreferences(context).edit();
-        appPrefs.putString("select_oc_account", null);
+        appPrefs.putString(PREF_SELECT_OC_ACCOUNT, null);
 
         appPrefs.apply();
     }
@@ -196,25 +176,24 @@ public class AccountUtils {
     /**
      * Access the version of the OC server corresponding to an account SAVED IN THE ACCOUNTMANAGER
      *
-     * @param   account     ownCloud account
-     * @return              Version of the OC server corresponding to account, according to the data saved
-     *                      in the system AccountManager
+     * @param account ownCloud account
+     * @return Version of the OC server corresponding to account, according to the data saved
+     * in the system AccountManager
      */
     public static @NonNull
     OwnCloudVersion getServerVersion(Account account) {
-        OwnCloudVersion serverVersion = OwnCloudVersion.nextcloud_10;
+        OwnCloudVersion serverVersion = MainApp.MINIMUM_SUPPORTED_SERVER_VERSION;
+
         if (account != null) {
             AccountManager accountMgr = AccountManager.get(MainApp.getAppContext());
             String serverVersionStr = accountMgr.getUserData(account, Constants.KEY_OC_VERSION);
+
             if (serverVersionStr != null) {
                 serverVersion = new OwnCloudVersion(serverVersionStr);
             }
         }
-        return serverVersion;
-    }
 
-    public static boolean hasSearchUsersSupport(Account account) {
-        return getServerVersion(account).isSearchUsersSupported();
+        return serverVersion;
     }
 
     public static boolean hasSearchSupport(Account account) {

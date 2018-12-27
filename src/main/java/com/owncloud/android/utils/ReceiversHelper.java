@@ -29,10 +29,14 @@ import com.evernote.android.job.JobRequest;
 import com.evernote.android.job.util.Device;
 import com.owncloud.android.MainApp;
 
-/*
-    Helper for setting up network and power receivers
+/**
+ * Helper for setting up network and power receivers
  */
-public class ReceiversHelper {
+public final class ReceiversHelper {
+
+    private ReceiversHelper() {
+        // utility class -> private constructor
+    }
 
     public static void registerNetworkChangeReceiver() {
         Context context = MainApp.getAppContext();
@@ -63,7 +67,7 @@ public class ReceiversHelper {
         BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                if (intent.getAction() != null && intent.getAction().equals(Intent.ACTION_POWER_CONNECTED)) {
+                if (Intent.ACTION_POWER_CONNECTED.equals(intent.getAction())) {
                     FilesSyncHelper.restartJobsIfNeeded();
                 }
             }

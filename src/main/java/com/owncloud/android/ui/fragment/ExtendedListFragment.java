@@ -24,13 +24,16 @@ package com.owncloud.android.ui.fragment;
 import android.animation.LayoutTransition;
 import android.app.Activity;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.DrawableRes;
+import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -58,9 +61,6 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.getbase.floatingactionbutton.AddFloatingActionButton;
-import com.getbase.floatingactionbutton.FloatingActionButton;
-import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.owncloud.android.MainApp;
 import com.owncloud.android.R;
 import com.owncloud.android.authentication.AccountUtils;
@@ -83,7 +83,8 @@ import org.parceler.Parcel;
 import java.util.ArrayList;
 
 public class ExtendedListFragment extends Fragment
-        implements OnItemClickListener, OnEnforceableRefreshListener, SearchView.OnQueryTextListener {
+        implements OnItemClickListener, OnEnforceableRefreshListener, SearchView.OnQueryTextListener,
+        SearchView.OnCloseListener {
 
     protected static final String TAG = ExtendedListFragment.class.getSimpleName();
 
@@ -101,7 +102,7 @@ public class ExtendedListFragment extends Fragment
     private int maxColumnSizePortrait = 5;
     private int maxColumnSizeLandscape = 10;
 
-    private ScaleGestureDetector mScaleGestureDetector = null;
+    private ScaleGestureDetector mScaleGestureDetector;
     protected SwipeRefreshLayout mRefreshListLayout;
     protected LinearLayout mEmptyListContainer;
     protected TextView mEmptyListMessage;
@@ -109,18 +110,15 @@ public class ExtendedListFragment extends Fragment
     protected ImageView mEmptyListIcon;
     protected ProgressBar mEmptyListProgress;
 
-    private FloatingActionsMenu mFabMain;
-    private FloatingActionButton mFabUpload;
-    private FloatingActionButton mFabMkdir;
-    private FloatingActionButton mFabUploadFromApp;
+    private FloatingActionButton mFabMain;
 
     // Save the state of the scroll in browsing
     private ArrayList<Integer> mIndexes;
     private ArrayList<Integer> mFirstPositions;
     private ArrayList<Integer> mTops;
-    private int mHeightCell = 0;
+    private int mHeightCell;
 
-    private SwipeRefreshLayout.OnRefreshListener mOnRefreshListener = null;
+    private SwipeRefreshLayout.OnRefreshListener mOnRefreshListener;
 
     private EmptyRecyclerView mRecyclerView;
 
@@ -156,19 +154,7 @@ public class ExtendedListFragment extends Fragment
         return mRecyclerView;
     }
 
-    public FloatingActionButton getFabUpload() {
-        return mFabUpload;
-    }
-
-    public FloatingActionButton getFabUploadFromApp() {
-        return mFabUploadFromApp;
-    }
-
-    public FloatingActionButton getFabMkdir() {
-        return mFabMkdir;
-    }
-
-    public FloatingActionsMenu getFabMain() {
+    public FloatingActionButton getFabMain() {
         return mFabMain;
     }
 
@@ -193,6 +179,7 @@ public class ExtendedListFragment extends Fragment
         final MenuItem item = menu.findItem(R.id.action_search);
         searchView = (SearchView) MenuItemCompat.getActionView(item);
         searchView.setOnQueryTextListener(this);
+        searchView.setOnCloseListener(this);
 
         final Handler handler = new Handler();
 
@@ -215,15 +202,15 @@ public class ExtendedListFragment extends Fragment
         searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, final boolean hasFocus) {
-                if (hasFocus) {
-                    mFabMain.collapse();
-                }
 
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         if (getActivity() != null && !(getActivity() instanceof FolderPickerActivity)) {
-                            setFabEnabled(!hasFocus);
+
+                            if (!(getActivity() instanceof UploadFilesActivity)) {
+                                setFabVisible(!hasFocus);
+                            }
 
                             boolean searchSupported = AccountUtils.hasSearchSupport(AccountUtils.
                                     getCurrentOwnCloudAccount(MainApp.getAppContext()));
@@ -270,7 +257,7 @@ public class ExtendedListFragment extends Fragment
             }
         });
 
-        int fontColor = ThemeUtils.fontColor();
+        int fontColor = ThemeUtils.fontColor(getContext());
 
         LinearLayout searchBar = searchView.findViewById(R.id.search_bar);
         TextView searchBadge = searchView.findViewById(R.id.search_badge);
@@ -312,7 +299,7 @@ public class ExtendedListFragment extends Fragment
                 delay = 0;
             }
 
-            if (adapter != null && adapter instanceof OCFileListAdapter) {
+            if (adapter instanceof OCFileListAdapter) {
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
@@ -326,7 +313,7 @@ public class ExtendedListFragment extends Fragment
                         }
                     }
                 }, delay);
-            } else if (adapter != null && adapter instanceof LocalFileListAdapter) {
+            } else if (adapter instanceof LocalFileListAdapter) {
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
@@ -356,9 +343,15 @@ public class ExtendedListFragment extends Fragment
         }
     }
 
+    @Override
+    public boolean onClose() {
+        performSearch("", true);
+
+        return false;
+    }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         Log_OC.d(TAG, "onCreateView");
 
         View v = inflater.inflate(R.layout.list_fragment, null);
@@ -390,11 +383,7 @@ public class ExtendedListFragment extends Fragment
         onCreateSwipeToRefresh(mRefreshListLayout);
 
         mFabMain = v.findViewById(R.id.fab_main);
-        mFabUpload = v.findViewById(R.id.fab_upload);
-        mFabMkdir = v.findViewById(R.id.fab_mkdir);
-        mFabUploadFromApp = v.findViewById(R.id.fab_upload_from_app);
-
-        applyFABTheming();
+        ThemeUtils.tintFloatingActionButton(mFabMain, R.drawable.ic_plus, getContext());
 
         boolean searchSupported = AccountUtils.hasSearchSupport(AccountUtils.
                 getCurrentOwnCloudAccount(MainApp.getAppContext()));
@@ -447,7 +436,8 @@ public class ExtendedListFragment extends Fragment
         mEmptyListHeadline = view.findViewById(R.id.empty_list_view_headline);
         mEmptyListIcon = view.findViewById(R.id.empty_list_icon);
         mEmptyListProgress = view.findViewById(R.id.empty_list_progress);
-        mEmptyListProgress.getIndeterminateDrawable().setColorFilter(ThemeUtils.primaryColor(), PorterDuff.Mode.SRC_IN);
+        mEmptyListProgress.getIndeterminateDrawable().setColorFilter(ThemeUtils.primaryColor(getContext()),
+                PorterDuff.Mode.SRC_IN);
     }
 
     /**
@@ -483,7 +473,7 @@ public class ExtendedListFragment extends Fragment
 
 
     @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
+    public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
         Log_OC.d(TAG, "onSaveInstanceState()");
         savedInstanceState.putBoolean(KEY_IS_GRID_VISIBLE, isGridEnabled());
@@ -505,7 +495,7 @@ public class ExtendedListFragment extends Fragment
      */
     protected void restoreIndexAndTopPosition() {
         if (mIndexes.size() > 0) {
-            // needs to be checked; not every browse-up had a browse-down before 
+            // needs to be checked; not every browse-up had a browse-down before
 
             int index = mIndexes.remove(mIndexes.size() - 1);
             final int firstPosition = mFirstPositions.remove(mFirstPositions.size() - 1);
@@ -599,41 +589,46 @@ public class ExtendedListFragment extends Fragment
 
     /**
      * Sets the 'visibility' state of the FAB contained in the fragment.
-     * <p>
-     * When 'false' is set, FAB visibility is set to View.GONE programmatically,
      *
-     * @param enabled Desired visibility for the FAB.
+     * When 'false' is set, FAB visibility is set to View.GONE programmatically.
+     *
+     * @param visible Desired visibility for the FAB.
      */
-    public void setFabEnabled(final boolean enabled) {
+    public void setFabVisible(final boolean visible) {
         if (getActivity() != null) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (enabled) {
-                        mFabMain.setVisibility(View.VISIBLE);
-                    } else {
-                        mFabMain.setVisibility(View.GONE);
-                    }
+            getActivity().runOnUiThread(() -> {
+                if (visible) {
+                    mFabMain.show();
+                    ThemeUtils.tintDrawable(mFabMain.getBackground(), ThemeUtils.primaryColor(getContext()));
+                } else {
+                    mFabMain.hide();
                 }
             });
         }
     }
 
-
     /**
-     * Set tinting of FAB's from server data
+     * Sets the 'visibility' state of the FAB contained in the fragment.
+     *
+     * When 'false' is set, FAB is greyed out
+     *
+     * @param enabled Desired visibility for the FAB.
      */
-    private void applyFABTheming() {
-        AddFloatingActionButton addButton = getFabMain().getAddButton();
-        addButton.setColorNormal(ThemeUtils.primaryColor());
-        addButton.setColorPressed(ThemeUtils.primaryDarkColor());
-        addButton.setPlusColor(ThemeUtils.fontColor());
-
-        ThemeUtils.tintFloatingActionButton(getFabUpload(), R.drawable.ic_action_upload);
-        ThemeUtils.tintFloatingActionButton(getFabMkdir(), R.drawable.ic_action_create_dir);
-        ThemeUtils.tintFloatingActionButton(getFabUploadFromApp(), R.drawable.ic_import);
+    public void setFabEnabled(final boolean enabled) {
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(() -> {
+                if (enabled) {
+                    mFabMain.setEnabled(true);
+                    ThemeUtils.tintDrawable(mFabMain.getBackground(), ThemeUtils.primaryColor(getContext()));
+                } else {
+                    mFabMain.setEnabled(false);
+                    ThemeUtils.tintDrawable(mFabMain.getBackground(), Color.GRAY);
+                }
+            });
+        }
     }
 
+    /**
     /**
      * Set message for empty list view.
      */
@@ -674,7 +669,8 @@ public class ExtendedListFragment extends Fragment
                     mEmptyListMessage.setText(message);
 
                     if (tintIcon) {
-                        mEmptyListIcon.setImageDrawable(ThemeUtils.tintDrawable(icon, ThemeUtils.primaryColor()));
+                        mEmptyListIcon.setImageDrawable(ThemeUtils.tintDrawable(icon,
+                                ThemeUtils.primaryColor(getContext(), true)));
                     } else {
                         mEmptyListIcon.setImageResource(icon);
                     }
@@ -771,9 +767,9 @@ public class ExtendedListFragment extends Fragment
     }
 
     protected void onCreateSwipeToRefresh(SwipeRefreshLayout refreshLayout) {
-        int primaryColor = ThemeUtils.primaryColor();
-        int darkColor = ThemeUtils.primaryDarkColor();
-        int accentColor = ThemeUtils.primaryAccentColor();
+        int primaryColor = ThemeUtils.primaryColor(getContext());
+        int darkColor = ThemeUtils.primaryDarkColor(getContext());
+        int accentColor = ThemeUtils.primaryAccentColor(getContext());
 
         // Colors in animations
         // TODO change this to use darker and lighter color, again.
@@ -797,8 +793,6 @@ public class ExtendedListFragment extends Fragment
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             maxColumnSize = maxColumnSizeLandscape;
         } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            maxColumnSize = maxColumnSizePortrait;
-        } else {
             maxColumnSize = maxColumnSizePortrait;
         }
 

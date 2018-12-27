@@ -21,6 +21,7 @@
 package com.owncloud.android.utils;
 
 import com.owncloud.android.datamodel.OCFile;
+import com.owncloud.android.lib.resources.files.TrashbinFile;
 
 import java.io.File;
 import java.util.Collections;
@@ -29,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Sort order 
+ * Sort order
  */
 
 public class FileSortOrder {
@@ -41,22 +42,27 @@ public class FileSortOrder {
     public static final FileSortOrder sort_big_to_small = new FileSortOrderBySize("sort_big_to_small", false);
 
     public static final Map<String, FileSortOrder> sortOrders;
+
+    public enum Type {
+        trashBinView, localFileListView, uploadFilesView
+
+    }
     static {
-        sortOrders = new HashMap<String, FileSortOrder>();
-        sortOrders.put(sort_a_to_z.mName, sort_a_to_z);
-        sortOrders.put(sort_z_to_a.mName, sort_z_to_a);
-        sortOrders.put(sort_old_to_new.mName, sort_old_to_new);
-        sortOrders.put(sort_new_to_old.mName, sort_new_to_old);
-        sortOrders.put(sort_small_to_big.mName, sort_small_to_big);
-        sortOrders.put(sort_big_to_small.mName, sort_big_to_small);
+        sortOrders = new HashMap<>();
+        sortOrders.put(sort_a_to_z.name, sort_a_to_z);
+        sortOrders.put(sort_z_to_a.name, sort_z_to_a);
+        sortOrders.put(sort_old_to_new.name, sort_old_to_new);
+        sortOrders.put(sort_new_to_old.name, sort_new_to_old);
+        sortOrders.put(sort_small_to_big.name, sort_small_to_big);
+        sortOrders.put(sort_big_to_small.name, sort_big_to_small);
     }
 
-    public String mName;
-    public boolean mAscending;
+    public String name;
+    public boolean isAscending;
 
     public FileSortOrder(String name, boolean ascending) {
-        mName = name;
-        mAscending = ascending;
+        this.name = name;
+        isAscending = ascending;
     }
 
     public List<OCFile> sortCloudFiles(List<OCFile> files) {
@@ -67,6 +73,10 @@ public class FileSortOrder {
         return files;
     }
 
+    public List<TrashbinFile> sortTrashbinFiles(List<TrashbinFile> files) {
+        return files;
+    }
+
     /**
      * Sorts list by Favourites.
      *
@@ -74,11 +84,11 @@ public class FileSortOrder {
      */
     public static List<OCFile> sortCloudFilesByFavourite(List<OCFile> files) {
         Collections.sort(files, (o1, o2) -> {
-            if (o1.getIsFavorite() && o2.getIsFavorite()) {
+            if (o1.isFavorite() && o2.isFavorite()) {
                 return 0;
-            } else if (o1.getIsFavorite()) {
+            } else if (o1.isFavorite()) {
                 return -1;
-            } else if (o2.getIsFavorite()) {
+            } else if (o2.isFavorite()) {
                 return 1;
             }
             return 0;

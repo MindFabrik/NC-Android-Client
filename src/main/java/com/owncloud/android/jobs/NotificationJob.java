@@ -60,7 +60,7 @@ public class NotificationJob extends Job {
 
     @NonNull
     @Override
-    protected Result onRunJob(Params params) {
+    protected Result onRunJob(@NonNull Params params) {
 
         Context context = getContext();
         PersistableBundleCompat persistableBundleCompat = getParams().getExtras();
@@ -68,15 +68,13 @@ public class NotificationJob extends Job {
         String signature = persistableBundleCompat.getString(KEY_NOTIFICATION_SIGNATURE, "");
 
         if (!TextUtils.isEmpty(subject) && !TextUtils.isEmpty(signature)) {
-
             try {
                 byte[] base64DecodedSubject = Base64.decode(subject, Base64.DEFAULT);
                 byte[] base64DecodedSignature = Base64.decode(signature, Base64.DEFAULT);
-                PushUtils pushUtils = new PushUtils();
                 PrivateKey privateKey = (PrivateKey) PushUtils.readKeyFromFile(false);
 
                 try {
-                    SignatureVerification signatureVerification = pushUtils.verifySignature(context,
+                    SignatureVerification signatureVerification = PushUtils.verifySignature(context,
                             base64DecodedSignature, base64DecodedSubject);
 
                     if (signatureVerification.isSignatureValid()) {
@@ -92,14 +90,10 @@ public class NotificationJob extends Job {
                         if (!decryptedPushMessage.getApp().equals("spreed")) {
                             sendNotification(decryptedPushMessage.getSubject(), signatureVerification.getAccount());
                         }
-
                     }
-                } catch (NoSuchAlgorithmException e1) {
-                    Log.d(TAG, "No proper algorithm to decrypt the message " + e1.getLocalizedMessage());
-                } catch (NoSuchPaddingException e1) {
-                    Log.d(TAG, "No proper padding to decrypt the message " + e1.getLocalizedMessage());
-                } catch (InvalidKeyException e1) {
-                    Log.d(TAG, "Invalid private key " + e1.getLocalizedMessage());
+                } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e1) {
+                    Log.d(TAG, "Error decrypting message " + e1.getClass().getName()
+                            + " " + e1.getLocalizedMessage());
                 }
             } catch (Exception exception) {
                 Log.d(TAG, "Something went very wrong" + exception.getLocalizedMessage());
@@ -119,7 +113,7 @@ public class NotificationJob extends Job {
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context)
                 .setSmallIcon(R.drawable.notification_icon)
                 .setLargeIcon(BitmapFactory.decodeResource(context.getResources(), R.drawable.notification_icon))
-                .setColor(ThemeUtils.primaryColor())
+                .setColor(ThemeUtils.primaryColor(context))
                 .setShowWhen(true)
                 .setSubText(account.name)
                 .setContentTitle(contentTitle)
@@ -127,7 +121,7 @@ public class NotificationJob extends Job {
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent);
 
-        if ((android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             notificationBuilder.setChannelId(NotificationUtils.NOTIFICATION_CHANNEL_PUSH);
         }
 
@@ -136,5 +130,4 @@ public class NotificationJob extends Job {
 
         notificationManager.notify(0, notificationBuilder.build());
     }
-
 }

@@ -25,14 +25,12 @@ package com.owncloud.android.ui.activity;
 import android.accounts.Account;
 import android.accounts.AuthenticatorException;
 import android.accounts.OperationCanceledException;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.MenuItem;
@@ -42,7 +40,6 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.owncloud.android.MainApp;
 import com.owncloud.android.R;
 import com.owncloud.android.authentication.AccountUtils;
 import com.owncloud.android.datamodel.ArbitraryDataProvider;
@@ -56,7 +53,6 @@ import com.owncloud.android.lib.common.utils.Log_OC;
 import com.owncloud.android.lib.resources.notifications.GetRemoteNotificationsOperation;
 import com.owncloud.android.lib.resources.notifications.models.Notification;
 import com.owncloud.android.ui.adapter.NotificationListAdapter;
-import com.owncloud.android.utils.AnalyticsUtils;
 import com.owncloud.android.utils.DisplayUtils;
 import com.owncloud.android.utils.PushUtils;
 import com.owncloud.android.utils.ThemeUtils;
@@ -70,12 +66,11 @@ import butterknife.ButterKnife;
 import butterknife.Unbinder;
 
 /**
- * Activity displaying all server side stored activity items.
+ * Activity displaying all server side stored notification items.
  */
 public class NotificationsActivity extends FileActivity {
 
     private static final String TAG = NotificationsActivity.class.getSimpleName();
-    private static final String SCREEN_NAME = "Notifications";
 
     @BindView(R.id.empty_list_view)
     public LinearLayout emptyContentContainer;
@@ -108,7 +103,9 @@ public class NotificationsActivity extends FileActivity {
     private Unbinder unbinder;
 
     private NotificationListAdapter adapter;
-    private Snackbar snackbar = null;
+    private Snackbar snackbar;
+    private OwnCloudClient client;
+    private Account currentAccount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,14 +115,17 @@ public class NotificationsActivity extends FileActivity {
         setContentView(R.layout.notifications_layout);
         unbinder = ButterKnife.bind(this);
 
-        String account;
-        Account currentAccount;
-        if (getIntent() != null && getIntent().getExtras() != null &&
-                (account = getIntent().getExtras().getString(NotificationJob.KEY_NOTIFICATION_ACCOUNT)) != null &&
-                (currentAccount = AccountUtils.getCurrentOwnCloudAccount(getApplicationContext())) != null &&
-                !account.equalsIgnoreCase(currentAccount.name)) {
-            AccountUtils.setCurrentOwnCloudAccount(getApplicationContext(), account);
-            setAccount(AccountUtils.getCurrentOwnCloudAccount(this));
+        currentAccount = getAccount();
+
+        // use account from intent (opened via android notification can have a different account than current one)
+        if (getIntent() != null && getIntent().getExtras() != null) {
+            String account = getIntent().getExtras().getString(NotificationJob.KEY_NOTIFICATION_ACCOUNT);
+
+            if (account != null && (currentAccount == null || !account.equalsIgnoreCase(currentAccount.name))) {
+                AccountUtils.setCurrentOwnCloudAccount(this, account);
+                setAccount(AccountUtils.getCurrentOwnCloudAccount(this));
+                currentAccount = getAccount();
+            }
         }
 
         // setup toolbar
@@ -136,7 +136,13 @@ public class NotificationsActivity extends FileActivity {
 
         // setup drawer
         setupDrawer(R.id.nav_notifications);
-        ThemeUtils.setColoredTitle(getSupportActionBar(), getString(R.string.drawer_item_notifications));
+        ThemeUtils.setColoredTitle(getSupportActionBar(), getString(R.string.drawer_item_notifications), this);
+
+        if (currentAccount == null) {
+            // show error
+            runOnUiThread(() -> setEmptyContent(noResultsHeadline, getString(R.string.account_not_found)));
+            return;
+        }
 
         swipeListRefreshLayout.setOnRefreshListener(() -> {
             setLoadingMessage();
@@ -159,30 +165,26 @@ public class NotificationsActivity extends FileActivity {
                 snackbar.show();
             }
         } else {
-            Context context = getApplicationContext();
-            String pushUrl = context.getResources().getString(R.string.push_server_url);
+            String pushUrl = getResources().getString(R.string.push_server_url);
 
             if (pushUrl.isEmpty()) {
                 snackbar = Snackbar.make(emptyContentContainer, R.string.push_notifications_not_implemented,
                         Snackbar.LENGTH_INDEFINITE);
             } else {
-                Account account = AccountUtils.getCurrentOwnCloudAccount(context);
                 ArbitraryDataProvider arbitraryDataProvider = new ArbitraryDataProvider(getContentResolver());
 
-                if (account != null) {
-                    boolean usesOldLogin = arbitraryDataProvider.getBooleanValue(account.name,
+                    boolean usesOldLogin = arbitraryDataProvider.getBooleanValue(currentAccount.name,
                             AccountUtils.ACCOUNT_USES_STANDARD_PASSWORD);
 
-                    if (usesOldLogin) {
-                        snackbar = Snackbar.make(emptyContentContainer, R.string.push_notifications_old_login,
-                                Snackbar.LENGTH_INDEFINITE);
-                    } else {
-                        String pushValue = arbitraryDataProvider.getValue(account.name, PushUtils.KEY_PUSH);
+                if (usesOldLogin) {
+                    snackbar = Snackbar.make(emptyContentContainer, R.string.push_notifications_old_login,
+                            Snackbar.LENGTH_INDEFINITE);
+                } else {
+                    String pushValue = arbitraryDataProvider.getValue(currentAccount.name, PushUtils.KEY_PUSH);
 
-                        if (pushValue == null || pushValue.isEmpty()) {
-                            snackbar = Snackbar.make(emptyContentContainer, R.string.push_notifications_temp_error,
-                                    Snackbar.LENGTH_INDEFINITE);
-                        }
+                    if (pushValue == null || pushValue.isEmpty()) {
+                        snackbar = Snackbar.make(emptyContentContainer, R.string.push_notifications_temp_error,
+                                Snackbar.LENGTH_INDEFINITE);
                     }
                 }
             }
@@ -223,25 +225,17 @@ public class NotificationsActivity extends FileActivity {
     }
 
     /**
-     * sets up the UI elements and loads all activity items.
+     * sets up the UI elements and loads all notification items.
      */
     private void setupContent() {
         emptyContentIcon.setImageResource(R.drawable.ic_notification_light_grey);
-        emptyContentProgressBar.getIndeterminateDrawable().setColorFilter(ThemeUtils.primaryAccentColor(),
+        emptyContentProgressBar.getIndeterminateDrawable().setColorFilter(ThemeUtils.primaryAccentColor(this),
                 PorterDuff.Mode.SRC_IN);
         setLoadingMessage();
 
-        adapter = new NotificationListAdapter(this);
-        recyclerView.setAdapter(adapter);
-
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(
-                recyclerView.getContext(),
-                layoutManager.getOrientation()
-        );
 
         recyclerView.setLayoutManager(layoutManager);
-        recyclerView.addItemDecoration(dividerItemDecoration);
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation_view);
 
@@ -258,58 +252,50 @@ public class NotificationsActivity extends FileActivity {
     }
 
     private void fetchAndSetData() {
-        final Account currentAccount = AccountUtils.getCurrentOwnCloudAccount(MainApp.getAppContext());
-        final Context context = MainApp.getAppContext();
-
         Thread t = new Thread(() -> {
-            try {
-                if (currentAccount != null) {
-                    OwnCloudAccount ocAccount = new OwnCloudAccount(currentAccount, context);
-                    OwnCloudClient mClient = OwnCloudClientManagerFactory.getDefaultSingleton().
-                            getClientFor(ocAccount, MainApp.getAppContext());
-                    mClient.setOwnCloudVersion(AccountUtils.getServerVersion(currentAccount));
-
-                    RemoteOperation getRemoteNotificationOperation = new GetRemoteNotificationsOperation();
-                    final RemoteOperationResult result = getRemoteNotificationOperation.execute(mClient);
-
-                    if (result.isSuccess() && result.getNotificationData() != null) {
-                        final List<Notification> notifications = result.getNotificationData();
-
-                        runOnUiThread(() -> {
-                            populateList(notifications);
-                            if (notifications.size() > 0) {
-                                swipeEmptyListRefreshLayout.setVisibility(View.GONE);
-                                swipeListRefreshLayout.setVisibility(View.VISIBLE);
-                            } else {
-                                setEmptyContent(noResultsHeadline, noResultsMessage);
-                                swipeListRefreshLayout.setVisibility(View.GONE);
-                                swipeEmptyListRefreshLayout.setVisibility(View.VISIBLE);
-                            }
-                        });
-                    } else {
-                        Log_OC.d(TAG, result.getLogMessage());
-                        // show error
-                        runOnUiThread(() -> setEmptyContent(noResultsHeadline, result.getLogMessage()));
-                    }
-
-                    hideRefreshLayoutLoader();
-                } else {
-                    // show error
-                    runOnUiThread(() -> setEmptyContent(noResultsHeadline, getString(R.string.account_not_found)));
+            if (client == null) {
+                try {
+                    OwnCloudAccount ocAccount = new OwnCloudAccount(currentAccount, this);
+                    client = OwnCloudClientManagerFactory.getDefaultSingleton().getClientFor(ocAccount, this);
+                    client.setOwnCloudVersion(AccountUtils.getServerVersion(currentAccount));
+                } catch (com.owncloud.android.lib.common.accounts.AccountUtils.AccountNotFoundException |
+                    IOException | OperationCanceledException | AuthenticatorException e) {
+                    Log_OC.e(TAG, "Error initializing client", e);
                 }
-            } catch (com.owncloud.android.lib.common.accounts.AccountUtils.AccountNotFoundException e) {
-                Log_OC.e(TAG, "Account not found", e);
-            } catch (IOException e) {
-                Log_OC.e(TAG, "IO error", e);
-            } catch (OperationCanceledException e) {
-                Log_OC.e(TAG, "Operation has been canceled", e);
-            } catch (AuthenticatorException e) {
-                Log_OC.e(TAG, "Authentication Exception", e);
             }
+
+            if (adapter == null) {
+                adapter = new NotificationListAdapter(client, this);
+                recyclerView.setAdapter(adapter);
+            }
+
+            RemoteOperation getRemoteNotificationOperation = new GetRemoteNotificationsOperation();
+            final RemoteOperationResult result = getRemoteNotificationOperation.execute(client);
+
+            if (result.isSuccess() && result.getNotificationData() != null) {
+                final List<Notification> notifications = result.getNotificationData();
+
+                runOnUiThread(() -> {
+                    populateList(notifications);
+                    if (notifications.size() > 0) {
+                        swipeEmptyListRefreshLayout.setVisibility(View.GONE);
+                        swipeListRefreshLayout.setVisibility(View.VISIBLE);
+                    } else {
+                        setEmptyContent(noResultsHeadline, noResultsMessage);
+                        swipeListRefreshLayout.setVisibility(View.GONE);
+                        swipeEmptyListRefreshLayout.setVisibility(View.VISIBLE);
+                    }
+                });
+            } else {
+                Log_OC.d(TAG, result.getLogMessage());
+                // show error
+                runOnUiThread(() -> setEmptyContent(noResultsHeadline, result.getLogMessage()));
+            }
+
+            hideRefreshLayoutLoader();
         });
 
         t.start();
-
     }
 
     private void hideRefreshLayoutLoader() {
@@ -353,16 +339,18 @@ public class NotificationsActivity extends FileActivity {
         if (emptyContentContainer != null && emptyContentMessage != null) {
             emptyContentHeadline.setText(headline);
             emptyContentMessage.setText(message);
+            emptyContentMessage.setVisibility(View.VISIBLE);
 
             emptyContentProgressBar.setVisibility(View.GONE);
+            emptyContentIcon.setImageResource(R.drawable.ic_notification_light_grey);
             emptyContentIcon.setVisibility(View.VISIBLE);
         }
     }
 
     @Override
-    public void onResume() {
+    protected void onResume() {
         super.onResume();
-        AnalyticsUtils.setCurrentScreenName(this, SCREEN_NAME, TAG);
-    }
 
+        setDrawerMenuItemChecked(R.id.nav_notifications);
+    }
 }

@@ -4,16 +4,16 @@
  * @author masensio
  * @author David A. Velasco
  * Copyright (C) 2015 ownCloud Inc.
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
  * as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -27,7 +27,6 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -36,6 +35,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
+import android.support.annotation.RequiresApi;
 import android.support.annotation.StringRes;
 import android.support.multidex.MultiDexApplication;
 import android.support.v4.util.Pair;
@@ -44,6 +44,7 @@ import android.text.TextUtils;
 import android.view.WindowManager;
 
 import com.evernote.android.job.JobManager;
+import com.evernote.android.job.JobRequest;
 import com.owncloud.android.authentication.AccountUtils;
 import com.owncloud.android.authentication.PassCodeManager;
 import com.owncloud.android.datamodel.ArbitraryDataProvider;
@@ -56,16 +57,17 @@ import com.owncloud.android.datamodel.ThumbnailsCacheManager;
 import com.owncloud.android.datastorage.DataStorageProvider;
 import com.owncloud.android.datastorage.StoragePoint;
 import com.owncloud.android.db.PreferenceManager;
+import com.owncloud.android.jobs.MediaFoldersDetectionJob;
 import com.owncloud.android.jobs.NCJobCreator;
 import com.owncloud.android.lib.common.OwnCloudClientManagerFactory;
 import com.owncloud.android.lib.common.OwnCloudClientManagerFactory.Policy;
 import com.owncloud.android.lib.common.utils.Log_OC;
+import com.owncloud.android.lib.resources.status.OwnCloudVersion;
 import com.owncloud.android.ui.activity.ContactsPreferenceActivity;
 import com.owncloud.android.ui.activity.Preferences;
 import com.owncloud.android.ui.activity.SyncedFoldersActivity;
 import com.owncloud.android.ui.activity.WhatsNewActivity;
 import com.owncloud.android.ui.notifications.NotificationUtils;
-import com.owncloud.android.utils.AnalyticsUtils;
 import com.owncloud.android.utils.DisplayUtils;
 import com.owncloud.android.utils.FilesSyncHelper;
 import com.owncloud.android.utils.PermissionUtil;
@@ -77,6 +79,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -91,6 +94,9 @@ import static com.owncloud.android.ui.activity.ContactsPreferenceActivity.PREFER
  */
 public class MainApp extends MultiDexApplication {
 
+    public static final OwnCloudVersion OUTDATED_SERVER_VERSION = OwnCloudVersion.nextcloud_12;
+    public static final OwnCloudVersion MINIMUM_SUPPORTED_SERVER_VERSION = OwnCloudVersion.nextcloud_10;
+
     private static final String TAG = MainApp.class.getSimpleName();
 
     private static final String AUTH_ON = "on";
@@ -104,13 +110,14 @@ public class MainApp extends MultiDexApplication {
 
     private static String storagePath;
 
-    private static boolean mOnlyOnDevice = false;
+    private static boolean mOnlyOnDevice;
 
     private SharedPreferences appPrefs;
     @SuppressWarnings("unused")
     private boolean mBound;
 
     @SuppressFBWarnings("ST")
+    @Override
     public void onCreate() {
         super.onCreate();
         JobManager.create(this).addJobCreator(new NCJobCreator());
@@ -118,10 +125,6 @@ public class MainApp extends MultiDexApplication {
 
         new SecurityUtils();
         DisplayUtils.useCompatVectorIfNeeded();
-
-        if (!getResources().getBoolean(R.bool.analytics_enabled)) {
-            AnalyticsUtils.disableAnalytics();
-        }
 
         appPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
@@ -152,7 +155,7 @@ public class MainApp extends MultiDexApplication {
             Log_OC.d("Debug", "start logging");
         }
 
-        if (Build.VERSION.SDK_INT >= 24) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             try {
                 Method m = StrictMode.class.getMethod("disableDeathOnFileUriExposure");
                 m.invoke(null);
@@ -164,6 +167,20 @@ public class MainApp extends MultiDexApplication {
         initSyncOperations();
         initContactsBackup();
         notificationChannels();
+
+
+        new JobRequest.Builder(MediaFoldersDetectionJob.TAG)
+                .setPeriodic(TimeUnit.MINUTES.toMillis(15), TimeUnit.MINUTES.toMillis(5))
+                .setUpdateCurrent(true)
+                .build()
+                .schedule();
+
+        new JobRequest.Builder(MediaFoldersDetectionJob.TAG)
+                .startNow()
+                .setUpdateCurrent(false)
+                .build()
+                .schedule();
+
 
         // register global protection with pass code
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
@@ -228,7 +245,7 @@ public class MainApp extends MultiDexApplication {
                 StoragePoint[] storagePoints = DataStorageProvider.getInstance().getAvailableStoragePoints();
                 String storagePath = appPrefs.getString(Preferences.PreferenceKeys.STORAGE_PATH, "");
                 if (TextUtils.isEmpty(storagePath)) {
-                    if (appPrefs.getInt(WhatsNewActivity.KEY_LAST_SEEN_VERSION_CODE, 0) != 0) {
+                    if (PreferenceManager.getLastSeenVersionCode(this) != 0) {
                         // We already used the app, but no storage is set - fix that!
                         appPrefs.edit().putString(Preferences.PreferenceKeys.STORAGE_PATH,
                                 Environment.getExternalStorageDirectory().getAbsolutePath()).commit();
@@ -337,12 +354,17 @@ public class MainApp extends MultiDexApplication {
                 createChannel(notificationManager, NotificationUtils.NOTIFICATION_CHANNEL_PUSH,
                         R.string.notification_channel_push_name, R.string
                                 .notification_channel_push_description, context, NotificationManager.IMPORTANCE_DEFAULT);
+
+                createChannel(notificationManager, NotificationUtils.NOTIFICATION_CHANNEL_GENERAL, R.string
+                        .notification_channel_general_name, R.string.notification_channel_general_description,
+                        context, NotificationManager.IMPORTANCE_DEFAULT);
             } else {
                 Log_OC.e(TAG, "Notification manager is null");
             }
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     private static void createChannel(NotificationManager notificationManager,
                                       String channelId, int channelName,
                                       int channelDescription, Context context) {
@@ -366,7 +388,7 @@ public class MainApp extends MultiDexApplication {
             notificationManager.createNotificationChannel(channel);
         }
     }
-    
+
 
     public static Context getAppContext() {
         return MainApp.mContext;
@@ -384,11 +406,11 @@ public class MainApp extends MultiDexApplication {
         MainApp.storagePath = path;
     }
 
-    // Methods to obtain Strings referring app_name 
-    //   From AccountAuthenticator 
-    //   public static final String ACCOUNT_TYPE = "owncloud";    
-    public static String getAccountType() {
-        return getAppContext().getResources().getString(R.string.account_type);
+    // Methods to obtain Strings referring app_name
+    //   From AccountAuthenticator
+    //   public static final String ACCOUNT_TYPE = "owncloud";
+    public static String getAccountType(Context context) {
+        return context.getResources().getString(R.string.account_type);
     }
 
     // Non gradle build systems do not provide BuildConfig.VERSION_CODE
@@ -425,7 +447,7 @@ public class MainApp extends MultiDexApplication {
         return getAppContext().getResources().getString(R.string.authority);
     }
 
-    //  From ProviderMeta 
+    //  From ProviderMeta
     //  public static final String DB_FILE = "owncloud.db";
     public static String getDBFile() {
         return getAppContext().getResources().getString(R.string.db_file);
@@ -473,9 +495,8 @@ public class MainApp extends MultiDexApplication {
         String packageName = getAppContext().getPackageName();
         String version = "";
 
-        PackageInfo pInfo = null;
         try {
-            pInfo = getAppContext().getPackageManager().getPackageInfo(packageName, 0);
+            PackageInfo pInfo = getAppContext().getPackageManager().getPackageInfo(packageName, 0);
             if (pInfo != null) {
                 version = pInfo.versionName;
             }
@@ -489,7 +510,7 @@ public class MainApp extends MultiDexApplication {
     private static void updateToAutoUpload() {
             Context context = getAppContext();
             if (PreferenceManager.instantPictureUploadEnabled(context) ||
-                            PreferenceManager.instantPictureUploadEnabled(context)) {
+                    PreferenceManager.instantVideoUploadEnabled(context)){
 
                 // remove legacy shared preferences
                 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
@@ -511,20 +532,13 @@ public class MainApp extends MultiDexApplication {
                     new AlertDialog.Builder(context, R.style.Theme_ownCloud_Dialog)
                             .setTitle(R.string.drawer_synced_folders)
                             .setMessage(R.string.synced_folders_new_info)
-                            .setPositiveButton(R.string.drawer_open, new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which) {
-                                    // show Auto Upload
-                                    Intent folderSyncIntent = new Intent(context,
-                                            SyncedFoldersActivity.class);
-                                    dialog.dismiss();
-                                    context.startActivity(folderSyncIntent);
-                                }
+                            .setPositiveButton(R.string.drawer_open, (dialog, which) -> {
+                                // show Auto Upload
+                                Intent folderSyncIntent = new Intent(context, SyncedFoldersActivity.class);
+                                dialog.dismiss();
+                                context.startActivity(folderSyncIntent);
                             })
-                            .setNegativeButton(R.string.drawer_close, new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which) {
-                                    dialog.dismiss();
-                                }
-                            })
+                            .setNegativeButton(R.string.drawer_close, (dialog, which) -> dialog.dismiss())
                             .setIcon(R.drawable.nav_synced_folders)
                             .show();
                 } catch (WindowManager.BadTokenException e) {
@@ -553,8 +567,8 @@ public class MainApp extends MultiDexApplication {
 
             SyncedFolderProvider syncedFolderProvider = new SyncedFolderProvider(contentResolver);
 
-            final List<MediaFolder> imageMediaFolders = MediaProvider.getImageFolders(contentResolver, 1, null);
-            final List<MediaFolder> videoMediaFolders = MediaProvider.getVideoFolders(contentResolver, 1, null);
+            final List<MediaFolder> imageMediaFolders = MediaProvider.getImageFolders(contentResolver, 1, null, true);
+            final List<MediaFolder> videoMediaFolders = MediaProvider.getVideoFolders(contentResolver, 1, null, true);
 
             ArrayList<Long> idsToDelete = new ArrayList<>();
             List<SyncedFolder> syncedFolders = syncedFolderProvider.getSyncedFolders();
@@ -565,8 +579,8 @@ public class MainApp extends MultiDexApplication {
                 Log_OC.i(TAG, "Migration check for synced_folders record: "
                         + syncedFolder.getId() + " - " + syncedFolder.getLocalPath());
 
-                for (int i = 0; i < imageMediaFolders.size(); i++) {
-                    if (imageMediaFolders.get(i).absolutePath.equals(syncedFolder.getLocalPath())) {
+                for (MediaFolder imageMediaFolder : imageMediaFolders) {
+                    if (imageMediaFolder.absolutePath.equals(syncedFolder.getLocalPath())) {
                         newSyncedFolder = (SyncedFolder) syncedFolder.clone();
                         newSyncedFolder.setType(MediaFolderType.IMAGE);
                         primaryKey = syncedFolderProvider.storeSyncedFolder(newSyncedFolder);
@@ -576,8 +590,8 @@ public class MainApp extends MultiDexApplication {
                     }
                 }
 
-                for (int j = 0; j < videoMediaFolders.size(); j++) {
-                    if (videoMediaFolders.get(j).absolutePath.equals(syncedFolder.getLocalPath())) {
+                for (MediaFolder videoMediaFolder : videoMediaFolders) {
+                    if (videoMediaFolder.absolutePath.equals(syncedFolder.getLocalPath())) {
                         newSyncedFolder = (SyncedFolder) syncedFolder.clone();
                         newSyncedFolder.setType(MediaFolderType.VIDEO);
                         primaryKey = syncedFolderProvider.storeSyncedFolder(newSyncedFolder);

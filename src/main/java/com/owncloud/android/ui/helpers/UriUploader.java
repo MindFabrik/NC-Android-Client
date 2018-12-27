@@ -52,7 +52,7 @@ public class UriUploader {
     private final String TAG = UriUploader.class.getSimpleName();
 
     private FileActivity mActivity;
-    private ArrayList<Parcelable> mUrisToUpload;
+    private List<Parcelable> mUrisToUpload;
     private CopyAndUploadContentUrisTask.OnCopyTmpFilesTaskListener mCopyTmpTaskListener;
 
     private int mBehaviour;
@@ -72,7 +72,7 @@ public class UriUploader {
 
     public UriUploader(
             FileActivity activity,
-            ArrayList<Parcelable> uris,
+            List<Parcelable> uris,
             String uploadPath,
             Account account,
             int behaviour,
@@ -177,7 +177,7 @@ public class UriUploader {
      * @param sourceUris        Array of content:// URIs to the files to upload
      * @param remotePaths       Array of absolute paths to set to the uploaded files
      */
-    private void copyThenUpload(Uri[] sourceUris, String[] remotePaths) {
+    private void copyThenUpload(Uri[] sourceUris, String... remotePaths) {
         if (mShowWaitingDialog) {
             mActivity.showLoadingDialog(mActivity.getResources().
                     getString(R.string.wait_for_tmp_copy_from_private_storage));

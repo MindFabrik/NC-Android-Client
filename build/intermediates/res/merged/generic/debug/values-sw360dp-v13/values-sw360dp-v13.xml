@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <dimen name="nav_drawer_header_avatar">64dp</dimen>
-    <dimen name="nav_drawer_header_avatar_radius">32dp</dimen>
-    <dimen name="nav_drawer_header_height">164dp</dimen>
-    <integer name="media_grid_width">4</integer>
-</resources>

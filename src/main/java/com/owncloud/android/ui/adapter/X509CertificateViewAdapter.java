@@ -1,4 +1,4 @@
-/**
+/*
  *   ownCloud Android client application
  *
  *   @author masensio
@@ -16,10 +16,11 @@
  *
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 package com.owncloud.android.ui.adapter;
 
+import android.content.Context;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
@@ -39,13 +40,11 @@ import java.util.Map;
 import javax.security.auth.x500.X500Principal;
 
 /**
- *
+ * Show certificate information.
  */
 public class X509CertificateViewAdapter implements SslUntrustedCertDialog.CertificateViewAdapter {
     
-    //private final static String TAG = X509CertificateViewAdapter.class.getSimpleName();
-    
-    private X509Certificate mCertificate = null;
+    private X509Certificate mCertificate;
 
     private static final String TAG = X509CertificateViewAdapter.class.getSimpleName();
 
@@ -55,7 +54,7 @@ public class X509CertificateViewAdapter implements SslUntrustedCertDialog.Certif
     
     @Override
     public void updateCertificateView(View dialogView) {
-        TextView nullCerView = (TextView) dialogView.findViewById(R.id.null_cert);
+        TextView nullCerView = dialogView.findViewById(R.id.null_cert);
         
         if (mCertificate != null) {
             nullCerView.setVisibility(View.GONE);
@@ -70,7 +69,7 @@ public class X509CertificateViewAdapter implements SslUntrustedCertDialog.Certif
     }
 
     private byte[] getDigest(String algorithm, byte[] message) {
-        MessageDigest md = null;
+        MessageDigest md;
 
         try {
             md = MessageDigest.getInstance(algorithm);
@@ -82,43 +81,40 @@ public class X509CertificateViewAdapter implements SslUntrustedCertDialog.Certif
     }
 
     private void showSignature(View dialogView) {
-        byte[] cert = null;
+        byte[] cert;
 
-        TextView certFingerprintView = ((TextView) dialogView.findViewById(R.id.value_certificate_fingerprint));
-        TextView algorithmView = ((TextView) dialogView.findViewById(R.id.value_signature_algorithm));
+        TextView certFingerprintView = dialogView.findViewById(R.id.value_certificate_fingerprint);
+        TextView algorithmView = dialogView.findViewById(R.id.value_signature_algorithm);
 
         try {
             cert = mCertificate.getEncoded();
             if (cert == null) {
-
                 certFingerprintView.setText(R.string.certificate_load_problem);
                 algorithmView.setText(R.string.certificate_load_problem);
-
             } else {
-
-                certFingerprintView.setText(
-                        getDigestHexBytesWithColonsAndNewLines(dialogView, "SHA-256", cert)
-                                + getDigestHexBytesWithColonsAndNewLines(dialogView, "SHA-1", cert)
-                                + getDigestHexBytesWithColonsAndNewLines(dialogView, "MD5", cert));
+                certFingerprintView.setText(getDigestString(dialogView.getContext(), cert));
                 algorithmView.setText(mCertificate.getSigAlgName());
-
             }
-
         } catch (CertificateEncodingException e) {
             Log.e(TAG, "Problem while trying to decode the certificate.");
         }
-
-
     }
-    
-    private final String getDigestHexBytesWithColonsAndNewLines(View dialogView, final String digestType, final byte [] cert) {
+
+    @NonNull
+    private String getDigestString(Context context, byte[] cert) {
+        return getDigestHexBytesWithColonsAndNewLines(context, "SHA-256", cert)
+                + getDigestHexBytesWithColonsAndNewLines(context, "SHA-1", cert)
+                + getDigestHexBytesWithColonsAndNewLines(context, "MD5", cert);
+    }
+
+    private String getDigestHexBytesWithColonsAndNewLines(Context context, final String digestType, final byte [] cert) {
         final byte[] rawDigest;
         final String newLine = System.getProperty("line.separator");
 
         rawDigest = getDigest(digestType, cert);
 
         if ( rawDigest == null) {
-            return digestType + ":" + newLine + dialogView.getContext().getString(R.string.digest_algorithm_not_available) + newLine + newLine;
+            return digestType + ":" + newLine + context.getString(R.string.digest_algorithm_not_available) + newLine + newLine;
         }
 
         final StringBuilder hex = new StringBuilder(3 * rawDigest.length);
@@ -134,8 +130,8 @@ public class X509CertificateViewAdapter implements SslUntrustedCertDialog.Certif
      }    
 
     private void showValidity(Date notBefore, Date notAfter, View dialogView) {
-        TextView fromView = ((TextView)dialogView.findViewById(R.id.value_validity_from));
-        TextView toView = ((TextView)dialogView.findViewById(R.id.value_validity_to));
+        TextView fromView = dialogView.findViewById(R.id.value_validity_from);
+        TextView toView = dialogView.findViewById(R.id.value_validity_to);
         DateFormat dateFormat = DateFormat.getDateInstance();
         fromView.setText(dateFormat.format(notBefore));
         toView.setText(dateFormat.format(notAfter));
@@ -143,12 +139,12 @@ public class X509CertificateViewAdapter implements SslUntrustedCertDialog.Certif
 
     private void showSubject(X500Principal subject, View dialogView) {
         Map<String, String> s = parsePrincipal(subject);
-        TextView cnView = ((TextView)dialogView.findViewById(R.id.value_subject_CN));
-        TextView oView = ((TextView)dialogView.findViewById(R.id.value_subject_O));
-        TextView ouView = ((TextView)dialogView.findViewById(R.id.value_subject_OU));
-        TextView cView = ((TextView)dialogView.findViewById(R.id.value_subject_C));
-        TextView stView = ((TextView)dialogView.findViewById(R.id.value_subject_ST));
-        TextView lView = ((TextView)dialogView.findViewById(R.id.value_subject_L));
+        TextView cnView = dialogView.findViewById(R.id.value_subject_CN);
+        TextView oView = dialogView.findViewById(R.id.value_subject_O);
+        TextView ouView = dialogView.findViewById(R.id.value_subject_OU);
+        TextView cView = dialogView.findViewById(R.id.value_subject_C);
+        TextView stView = dialogView.findViewById(R.id.value_subject_ST);
+        TextView lView = dialogView.findViewById(R.id.value_subject_L);
         
         if (s.get("CN") != null) {
             cnView.setText(s.get("CN"));
@@ -190,12 +186,12 @@ public class X509CertificateViewAdapter implements SslUntrustedCertDialog.Certif
     
     private void showIssuer(X500Principal issuer, View dialogView) {
         Map<String, String> s = parsePrincipal(issuer);
-        TextView cnView = ((TextView)dialogView.findViewById(R.id.value_issuer_CN));
-        TextView oView = ((TextView)dialogView.findViewById(R.id.value_issuer_O));
-        TextView ouView = ((TextView)dialogView.findViewById(R.id.value_issuer_OU));
-        TextView cView = ((TextView)dialogView.findViewById(R.id.value_issuer_C));
-        TextView stView = ((TextView)dialogView.findViewById(R.id.value_issuer_ST));
-        TextView lView = ((TextView)dialogView.findViewById(R.id.value_issuer_L));
+        TextView cnView = dialogView.findViewById(R.id.value_issuer_CN);
+        TextView oView = dialogView.findViewById(R.id.value_issuer_O);
+        TextView ouView = dialogView.findViewById(R.id.value_issuer_OU);
+        TextView cView = dialogView.findViewById(R.id.value_issuer_C);
+        TextView stView = dialogView.findViewById(R.id.value_issuer_ST);
+        TextView lView = dialogView.findViewById(R.id.value_issuer_L);
         
         if (s.get("CN") != null) {
             cnView.setText(s.get("CN"));
@@ -237,18 +233,17 @@ public class X509CertificateViewAdapter implements SslUntrustedCertDialog.Certif
     
 
     private Map<String, String> parsePrincipal(X500Principal principal) {
-        Map<String, String> result = new HashMap<String, String>();
+        Map<String, String> result = new HashMap<>();
         String toParse = principal.getName();
         String[] pieces = toParse.split(",");
-        String[] tokens = {"CN", "O", "OU", "C", "ST", "L"}; 
-        for (int i=0; i < pieces.length ; i++) {
-            for (int j=0; j<tokens.length; j++) {
-                if (pieces[i].startsWith(tokens[j] + "=")) {
-                    result.put(tokens[j], pieces[i].substring(tokens[j].length()+1));
+        String[] tokens = {"CN", "O", "OU", "C", "ST", "L"};
+        for (String piece : pieces) {
+            for (String token : tokens) {
+                if (piece.startsWith(token + "=")) {
+                    result.put(token, piece.substring(token.length() + 1));
                 }
             }
         }
         return result;
     }
-
 }

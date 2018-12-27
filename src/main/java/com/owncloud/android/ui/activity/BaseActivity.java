@@ -5,9 +5,11 @@ import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.accounts.OperationCanceledException;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 
 import com.owncloud.android.MainApp;
@@ -19,10 +21,6 @@ import com.owncloud.android.lib.resources.status.OCCapability;
 
 //Change-MindFabrik-Start
 import com.owncloud.android.R;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
-import android.os.Build;
-import android.content.Context;
 //Change-MindFabrik-End
 
 
@@ -45,7 +43,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     /**
      * Flag to signal that the activity will is finishing to enforce the creation of an ownCloud {@link Account}.
      */
-    private boolean mRedirectingToSetupAccount = false;
+    private boolean mRedirectingToSetupAccount;
 
     /**
      * Flag to signal when the value of mAccount was set.
@@ -60,7 +58,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     /**
      * Access point to the cached database for the current ownCloud {@link Account}.
      */
-    private FileDataStorageManager mStorageManager = null;
+    private FileDataStorageManager mStorageManager;
 
     @Override
     protected void onNewIntent (Intent intent) {
@@ -80,7 +78,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected void onRestart() {
         Log_OC.v(TAG, "onRestart() start");
         super.onRestart();
-        boolean validAccount = (mCurrentAccount != null && AccountUtils.exists(mCurrentAccount, this));
+        boolean validAccount = mCurrentAccount != null && AccountUtils.exists(mCurrentAccount, this);
         if (!validAccount) {
             swapToDefaultAccount();
         }
@@ -100,12 +98,11 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected void setAccount(Account account, boolean savedAccount) {
         Account oldAccount = mCurrentAccount;
         boolean validAccount =
-                (account != null && AccountUtils.setCurrentOwnCloudAccount(getApplicationContext(),
-                        account.name));
+                account != null && AccountUtils.setCurrentOwnCloudAccount(getApplicationContext(), account.name);
         if (validAccount) {
             mCurrentAccount = account;
             mAccountWasSet = true;
-            mAccountWasRestored = (savedAccount || mCurrentAccount.equals(oldAccount));
+            mAccountWasRestored = savedAccount || mCurrentAccount.equals(oldAccount);
 
         } else {
             swapToDefaultAccount();
@@ -115,7 +112,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     /**
      * Tries to swap the current ownCloud {@link Account} for other valid and existing.
      *
-     * If no valid ownCloud {@link Account} exists, the the user is requested
+     * If no valid ownCloud {@link Account} exists, then the user is requested
      * to create a new ownCloud {@link Account}.
      *
      * POSTCONDITION: updates {@link #mAccountWasSet} and {@link #mAccountWasRestored}.
@@ -132,7 +129,7 @@ public abstract class BaseActivity extends AppCompatActivity {
 
         } else {
             mAccountWasSet = true;
-            mAccountWasRestored = (newAccount.equals(mCurrentAccount));
+            mAccountWasRestored = newAccount.equals(mCurrentAccount);
             mCurrentAccount = newAccount;
         }
     }
@@ -145,7 +142,7 @@ public abstract class BaseActivity extends AppCompatActivity {
      */
     protected void createAccount(boolean mandatoryCreation) {
         AccountManager am = AccountManager.get(getApplicationContext());
-        am.addAccount(MainApp.getAccountType(),
+        am.addAccount(MainApp.getAccountType(this),
                 null,
                 null,
                 null,
@@ -165,22 +162,30 @@ public abstract class BaseActivity extends AppCompatActivity {
             //Change-MindFabrik-Start
             if (getResources().getBoolean(R.bool.mindfabrik_force_lockfeature)) {
                 Log_OC.v(TAG,"[MFLOG] Lock Feature is forced; check settings...");
-
-                SharedPreferences appPrefs = PreferenceManager.getDefaultSharedPreferences(MainApp.getAppContext());
-                boolean passCodeIsEnabled = appPrefs.getBoolean(PassCodeActivity.PREFERENCE_SET_PASSCODE, false);
-                boolean fingerprintIsEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                        appPrefs.getBoolean(Preferences.PREFERENCE_USE_FINGERPRINT, false);
-
-                Log_OC.v(TAG, "[MFLOG] Current config: passCodeIsEnable=" + passCodeIsEnabled + ", fingerprintIsEnabled=" + fingerprintIsEnabled);
-                if (!passCodeIsEnabled && !fingerprintIsEnabled) {
-                    Log_OC.v(TAG,"[MFLOG] No security is configured, force config...");
-                    Intent settingsIntent = new Intent(getApplicationContext(), Preferences.class);
-                    startActivity(settingsIntent);
+                boolean passCodeOn = com.owncloud.android.db.PreferenceManager.getLockPreference(MainApp.getAppContext()).equals(Preferences.LOCK_PASSCODE);
+                if (!passCodeOn) {
+                    boolean deviceCode = com.owncloud.android.db.PreferenceManager.getLockPreference(MainApp.getAppContext()).equals(Preferences.LOCK_DEVICE_CREDENTIALS);
+                    if (deviceCode) {
+                        passCodeOn = true;
+                    }
                 }
 
+                Log_OC.v(TAG, "[MFLOG] Current config: " + passCodeOn);
+                if (!passCodeOn) {
+                    new AlertDialog.Builder(BaseActivity.this)
+                        .setTitle(R.string.mindfabrik_forcelock_title)
+                        .setMessage(R.string.mindfabrik_forcelock_text)
+                        .setCancelable(false)
+                        .setPositiveButton(R.string.mindfabrik_forelock_button, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                Intent settingsIntent = new Intent(getApplicationContext(), Preferences.class);
+                                startActivity(settingsIntent);
+                            }
+                        }).show();
+                }
             }
             //Change-MindFabrik-End
-
 
             mStorageManager = new FileDataStorageManager(getAccount(), getContentResolver());
             mCapabilities = mStorageManager.getCapability(mCurrentAccount.name);
@@ -188,7 +193,6 @@ public abstract class BaseActivity extends AppCompatActivity {
             Log_OC.e(TAG, "onAccountChanged was called with NULL account associated!");
         }
     }
-
     protected void setAccount(Account account) {
         mCurrentAccount = account;
     }

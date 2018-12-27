@@ -24,10 +24,11 @@
 
 package third_parties.daveKoeller;
 
-import com.owncloud.android.datamodel.OCFile;
+import com.owncloud.android.lib.resources.files.ServerFileInterface;
 
 import java.io.File;
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.text.Collator;
 import java.util.Comparator;
 
@@ -86,7 +87,7 @@ public class AlphanumComparator<T> implements Comparator<T>, Serializable {
         return chunk.toString();
     }
 
-    public int compare(OCFile o1, OCFile o2) {
+    public int compare(ServerFileInterface o1, ServerFileInterface o2) {
         String s1 = o1.getFileName();
         String s2 = o2.getFileName();
 
@@ -150,14 +151,10 @@ public class AlphanumComparator<T> implements Comparator<T>, Serializable {
                     countThat++;
                 }
 
-                try {
-                    long thisChunkValue = Long.parseLong(thisChunk.substring(0, countThis));
-                    long thatChunkValue = Long.parseLong(thatChunk.substring(0, countThat));
+                BigInteger thisChunkValue = new BigInteger(thisChunk.substring(0, countThis));
+                BigInteger thatChunkValue = new BigInteger(thatChunk.substring(0, countThat));
 
-                    result = Long.compare(thisChunkValue, thatChunkValue);
-                } catch (NumberFormatException exception) {
-                    result = thisChunk.substring(0, countThis).compareTo(thatChunk.substring(0, countThat));
-                }
+                result = thisChunkValue.compareTo(thatChunkValue);
                 
                 if (result == 0) {
                     // value is equal, compare leading zeros
@@ -171,9 +168,9 @@ public class AlphanumComparator<T> implements Comparator<T>, Serializable {
                 }
             } else if (isSpecialChar(thisChunk.charAt(0)) && isSpecialChar(thatChunk.charAt(0))) {
                 for (int i = 0; i < thisChunk.length(); i++) {
-                    if (thisChunk.charAt(i) == '.') {
+                    if (thisChunk.charAt(i) == '.' && thatChunk.charAt(i) != '.') {
                         return -1;
-                    } else if (thatChunk.charAt(i) == '.') {
+                    } else if (thatChunk.charAt(i) == '.' && thisChunk.charAt(i) != '.') {
                         return 1;
                     } else {
                         result = thisChunk.charAt(i) - thatChunk.charAt(i);

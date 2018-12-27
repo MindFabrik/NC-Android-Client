@@ -21,6 +21,8 @@
 
 package com.owncloud.android.authentication;
 
+import android.content.Context;
+
 import com.owncloud.android.MainApp;
 import com.owncloud.android.lib.common.accounts.AccountTypeUtils;
 import com.owncloud.android.lib.resources.status.OwnCloudVersion;
@@ -30,7 +32,7 @@ import java.util.Locale;
 /**
  * Helper class for authenticator-URL related logic.
  */
-public abstract class AuthenticatorUrlUtils {
+public final class AuthenticatorUrlUtils {
     public static final String WEBDAV_PATH_4_0_AND_LATER = "/remote.php/webdav";
 
     private static final String HTTPS_PROTOCOL = "https://";
@@ -38,6 +40,9 @@ public abstract class AuthenticatorUrlUtils {
 
     private static final String ODAV_PATH = "/remote.php/odav";
     private static final String SAML_SSO_PATH = "/remote.php/webdav";
+
+    private AuthenticatorUrlUtils() {
+    }
 
     /**
      * Returns the proper URL path to access the WebDAV interface of an ownCloud server,
@@ -49,12 +54,13 @@ public abstract class AuthenticatorUrlUtils {
      * @return                  WebDAV path for given OC version and authorization method, null if OC version
      *                          is unknown; versions prior to ownCloud 4 are not supported anymore
      */
-    public static String getWebdavPath(OwnCloudVersion version, String authTokenType) {
+    public static String getWebdavPath(OwnCloudVersion version, String authTokenType, Context context) {
         if (version != null) {
-            if (AccountTypeUtils.getAuthTokenTypeAccessToken(MainApp.getAccountType()).equals(authTokenType)) {
+            String accountType = MainApp.getAccountType(context);
+            if (AccountTypeUtils.getAuthTokenTypeAccessToken(accountType).equals(authTokenType)) {
                 return ODAV_PATH;
             }
-            if (AccountTypeUtils.getAuthTokenTypeSamlSessionCookie(MainApp.getAccountType()).equals(authTokenType)) {
+            if (AccountTypeUtils.getAuthTokenTypeSamlSessionCookie(accountType).equals(authTokenType)) {
                 return SAML_SSO_PATH;
             }
 
@@ -78,7 +84,7 @@ public abstract class AuthenticatorUrlUtils {
             normalizedUrl = normalizedUrl.trim();
 
             if (!normalizedUrl.toLowerCase(Locale.ROOT).startsWith(HTTP_PROTOCOL) &&
-                    !normalizedUrl.toLowerCase(Locale.ROOT).startsWith(HTTP_PROTOCOL)) {
+                    !normalizedUrl.toLowerCase(Locale.ROOT).startsWith(HTTPS_PROTOCOL)) {
                 if (sslWhenUnprefixed) {
                     normalizedUrl = HTTPS_PROTOCOL + normalizedUrl;
                 } else {
@@ -88,7 +94,7 @@ public abstract class AuthenticatorUrlUtils {
 
             normalizedUrl = normalizeUrlSuffix(normalizedUrl);
         }
-        return (normalizedUrl != null ? normalizedUrl : "");
+        return normalizedUrl != null ? normalizedUrl : "";
     }
 
     public static String trimWebdavSuffix(String url) {

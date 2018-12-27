@@ -56,9 +56,9 @@ import com.owncloud.android.operations.CheckCurrentCredentialsOperation;
 import com.owncloud.android.ui.EmptyRecyclerView;
 import com.owncloud.android.ui.adapter.UploadListAdapter;
 import com.owncloud.android.ui.decoration.MediaGridItemDecoration;
-import com.owncloud.android.utils.AnalyticsUtils;
 import com.owncloud.android.utils.DisplayUtils;
 import com.owncloud.android.utils.FilesSyncHelper;
+import com.owncloud.android.utils.ThemeUtils;
 
 import butterknife.BindString;
 import butterknife.BindView;
@@ -75,8 +75,6 @@ import static com.owncloud.android.ui.activity.Preferences.PREFERENCE_EXPERT_MOD
 public class UploadListActivity extends FileActivity {
 
     private static final String TAG = UploadListActivity.class.getSimpleName();
-
-    private static final String SCREEN_NAME = "Uploads";
 
     private UploadMessagesReceiver mUploadMessagesReceiver;
 
@@ -141,7 +139,7 @@ public class UploadListActivity extends FileActivity {
         setupContent();
 
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle(getString(R.string.uploads_view_title));
+            ThemeUtils.setColoredTitle(getSupportActionBar(), R.string.uploads_view_title, this);
         }
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation_view);
@@ -198,7 +196,7 @@ public class UploadListActivity extends FileActivity {
         Log_OC.v(TAG, "onResume() start");
         super.onResume();
 
-        AnalyticsUtils.setCurrentScreenName(this, SCREEN_NAME, TAG);
+        setDrawerMenuItemChecked(R.id.nav_uploads);
 
         // Listen for upload messages
         mUploadMessagesReceiver = new UploadMessagesReceiver();
@@ -386,9 +384,7 @@ public class UploadListActivity extends FileActivity {
     protected void onAccountSet(boolean stateWasRecovered) {
         super.onAccountSet(stateWasRecovered);
 
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle(getString(R.string.uploads_view_title));
-        }
+        ThemeUtils.setColoredTitle(getSupportActionBar(), R.string.uploads_view_title, this);
 
         if (mAccountWasSet) {
             setAccountInDrawer(getAccount());

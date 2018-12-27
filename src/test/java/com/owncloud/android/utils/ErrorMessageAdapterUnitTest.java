@@ -1,4 +1,4 @@
-/**
+/*
  *   ownCloud Android client application
  *
  *   @author David A. Velasco
@@ -55,9 +55,10 @@ public class ErrorMessageAdapterUnitTest {
     private final static String MOCK_TO_DELETE = "to delete this file";
     private final static String PATH_TO_DELETE = "/path/to/a.file";
     private final static String EXPECTED_ERROR_MESSAGE = "You do not have permission to delete this file";
+    private final static String ACCOUNT_TYPE = "nextcloud";
 
     @Mock
-    Resources mMockResources;
+    private Resources mMockResources;
 
     @Test
     public void getErrorCauseMessageForForbiddenRemoval() {
@@ -67,12 +68,12 @@ public class ErrorMessageAdapterUnitTest {
         when(mMockResources.getString(R.string.forbidden_permissions_delete))
             .thenReturn(MOCK_TO_DELETE);
 
-        Account account = new Account("name", MainApp.getAccountType());
+        Account account = new Account("name", ACCOUNT_TYPE);
 
         // ... when method under test is called ...
         String errorMessage = ErrorMessageAdapter.getErrorCauseMessage(
             new RemoteOperationResult(RemoteOperationResult.ResultCode.FORBIDDEN),
-                new RemoveFileOperation(PATH_TO_DELETE, false, account, MainApp.getAppContext()),
+                new RemoveFileOperation(PATH_TO_DELETE, false, account, false, MainApp.getAppContext()),
             mMockResources
         );
 

@@ -34,7 +34,6 @@ import com.owncloud.android.lib.common.utils.Log_OC;
 
 import org.apache.commons.codec.binary.Hex;
 
-import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
@@ -42,9 +41,12 @@ import java.util.Locale;
 /**
  * Utility class with methods for decoding Bitmaps.
  */
-public class BitmapUtils {
+public final class BitmapUtils {
     public static final String TAG = BitmapUtils.class.getSimpleName();
 
+    private BitmapUtils() {
+        // utility class -> private constructor
+    }
 
     /**
      * Decodes a bitmap from a file containing it minimizing the memory use, known that the bitmap
@@ -102,8 +104,7 @@ public class BitmapUtils {
 
             // calculates the largest inSampleSize value (for smallest sample) that is a power of 2 and keeps both
             // height and width **larger** than the requested height and width.
-            while ((halfHeight / inSampleSize) > reqHeight
-                    && (halfWidth / inSampleSize) > reqWidth) {
+            while ((halfHeight / inSampleSize) > reqHeight || (halfWidth / inSampleSize) > reqWidth) {
                 inSampleSize *= 2;
             }
         }
@@ -258,7 +259,7 @@ public class BitmapUtils {
         }
 
         if (3 * h < 2) {
-            return p + ((q - p) * 6 * ((2.0f / 3.0f) - h));
+            return p + ((q - p) * 6 * (2.0f / 3.0f - h));
         }
 
         return p;
@@ -269,10 +270,9 @@ public class BitmapUtils {
      *
      * @param name The name
      * @return corresponding RGB color
-     * @throws UnsupportedEncodingException if the charset is not supported
-     * @throws NoSuchAlgorithmException if the specified algorithm is not available
+     * @throws NoSuchAlgorithmException     if the specified algorithm is not available
      */
-    public static int[] calculateHSL(String name) throws UnsupportedEncodingException, NoSuchAlgorithmException {
+    public static int[] calculateHSL(String name) throws NoSuchAlgorithmException {
         // using adapted algorithm from https://github.com/nextcloud/server/blob/master/core/js/placeholder.js#L126
 
         String[] result = new String[]{"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"};
@@ -289,13 +289,13 @@ public class BitmapUtils {
 
         // Splitting evenly the string
         for (int i = 0; i < hash.length(); i++) {
-            result[i % modulo] = result[i % modulo] + String.valueOf(Integer.parseInt(hash.substring(i, i + 1), 16));
+            result[i % modulo] = result[i % modulo] + Integer.parseInt(hash.substring(i, i + 1), 16);
         }
 
         // Converting our data into a usable rgb format
         // Start at 1 because 16%3=1 but 15%3=0 and makes the repartition even
         for (int count = 1; count < modulo; count++) {
-            rgb[count % 3] += (Integer.parseInt(result[count]));
+            rgb[count % 3] += Integer.parseInt(result[count]);
         }
 
         // Reduce values bigger than rgb requirements
@@ -352,18 +352,11 @@ public class BitmapUtils {
         return hsl;
     }
 
-    public static String md5(String string) {
-        try {
-            MessageDigest md5 = MessageDigest.getInstance("MD5");
-            md5.update(string.getBytes());
+    public static String md5(String string) throws NoSuchAlgorithmException {
+        MessageDigest md5 = MessageDigest.getInstance("MD5");
+        md5.update(string.getBytes());
 
-            return new String(Hex.encodeHex(md5.digest()));
-
-        } catch (Exception e) {
-            Log_OC.e(TAG, e.getMessage());
-        }
-
-        return "";
+        return new String(Hex.encodeHex(md5.digest()));
     }
 
     /**
@@ -375,14 +368,16 @@ public class BitmapUtils {
      * @return the circular bitmap
      */
     public static RoundedBitmapDrawable bitmapToCircularBitmapDrawable(Resources resources, Bitmap bitmap) {
+        if (bitmap == null) {
+            return null;
+        }
+        
         RoundedBitmapDrawable roundedBitmap = RoundedBitmapDrawableFactory.create(resources, bitmap);
         roundedBitmap.setCircular(true);
         return roundedBitmap;
     }
 
     public static Bitmap drawableToBitmap(Drawable drawable) {
-        Bitmap bitmap;
-
         if (drawable instanceof BitmapDrawable) {
             BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
             if (bitmapDrawable.getBitmap() != null) {
@@ -390,6 +385,7 @@ public class BitmapUtils {
             }
         }
 
+        Bitmap bitmap;
         if (drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
             bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
         } else {

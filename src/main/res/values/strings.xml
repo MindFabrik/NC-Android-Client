@@ -3,9 +3,6 @@
     <string name="about_android">%1$s Android app</string>
     <string name="about_version">version %1$s</string>
     <string name="actionbar_sync">Refresh account</string>
-    <string name="actionbar_upload">Upload</string>
-    <string name="actionbar_upload_from_apps">Content from other apps</string>
-    <string name="actionbar_upload_files">Files</string>
     <string name="actionbar_open_with">Open with</string>
     <string name="actionbar_mkdir">New folder</string>
     <string name="actionbar_settings">Settings</string>
@@ -34,14 +31,19 @@
     <string name="drawer_item_activities">Activities</string>
     <string name="drawer_item_notifications">Notifications</string>
     <string name="drawer_quota">%1$s of %2$s used</string>
-	<string name="drawer_close">Close</string>
-    <string name="drawer_open">Open</string>
+    <string name="drawer_quota_unlimited">%1$s used</string>
+	<string name="drawer_close">Close sidebar</string>
+    <string name="drawer_open">Open sidebar</string>
     <string name="prefs_category_general">General</string>
     <string name="prefs_category_more">More</string>
     <string name="prefs_manage_accounts">Manage accounts</string>
-    <string name="prefs_passcode">Passcode lock</string>
-    <string name="prefs_fingerprint">Fingerprint lock</string>
-    <string name="prefs_fingerprint_notsetup">No fingerprints have been set up.</string>
+    <string name="prefs_lock">Lock</string>
+    <string name="prefs_lock_title">Lock using</string>
+    <string name="prefs_lock_none">None</string>
+    <string name="prefs_lock_using_passcode">Passcode</string>
+    <string name="prefs_lock_using_device_credentials">Device credentials</string>
+    <string name="prefs_lock_device_credentials_enabled">Device credentials enabled</string>
+    <string name="prefs_lock_device_credentials_not_setup">No device credentials have been set up.</string>
     <string name="prefs_expert_mode">Expert mode</string>
     <string name="prefs_show_hidden_files">Show hidden files</string>
     <string name="prefs_log_delete_history_button">Delete history</string>
@@ -61,10 +63,9 @@
     <string name="recommend_urls">%1$s or %2$s</string>
 
     <string name="auth_check_server">Check server</string>
-    <string name="auth_host_url">Server address https://&#8230;</string>
+    <string name="auth_host_url">Server address https://…</string>
     <string name="auth_username">Username</string>
     <string name="auth_password">Password</string>
-    <string name="auth_register">No Nextcloud yet?\nClick here to get one from a provider</string>
     <string name="sync_string_files">Files</string>
     <string name="setup_btn_connect">Connect</string>
     <string name="uploader_btn_upload_text">Upload</string>
@@ -81,7 +82,7 @@
     <string name="uploader_error_message_source_file_not_found">File selected for upload not found. Please check whether the file exists.</string>
     <string name="uploader_error_message_source_file_not_copied">Could not copy file to a temporary folder. Try to resend it.</string>
     <string name="uploader_upload_files_behaviour">Upload option:</string>
-    <string name="uploader_upload_files_behaviour_move_to_nextcloud_folder">Move file to Nextcloud folder</string>
+    <string name="uploader_upload_files_behaviour_move_to_nextcloud_folder">Move file to %1$s folder</string>
     <string name="uploader_upload_files_behaviour_only_upload">Keep file in source folder</string>
     <string name="uploader_upload_files_behaviour_upload_and_delete_from_source">Delete file from source folder</string>
     <string name="file_list_seconds_ago">seconds ago</string>
@@ -90,7 +91,7 @@
     <string name="file_list_empty">Upload some content or sync with your devices.</string>
     <string name="file_list_empty_favorites_filter_list">Files and folders you mark as favorites will show up here</string>
     <string name="file_list_empty_favorites_filter">Your search returned no favorited files.</string>
-    <string name="file_list_loading">Loading &#8230;</string>
+    <string name="file_list_loading">Loading…</string>
     <string name="file_list_no_app_for_file_type">No app set up to handle this file type.</string>
     <string name="local_file_list_empty">There are no files in this folder.</string>
     <string name="local_folder_list_empty">There are no further folders.</string>
@@ -110,10 +111,11 @@
     <string name="file_list_empty_text_photos_filter">No photos.</string>
     <string name="file_list_empty_text_videos">Upload some videos or activate auto upload.</string>
     <string name="file_list_empty_text_videos_filter">No videos.</string>
+    <string name="trashbin_empty_headline">No deleted files</string>
+    <string name="trashbin_empty_message">You will be able to recover deleted files from here</string>
     <string name="upload_list_empty_headline">No uploads available</string>
     <string name="upload_list_empty_text_auto_upload">Upload some content or activate auto upload.</string>
     <string name="file_list_folder">folder</string>
-    <string name="filedetails_select_file">Tap on a file to display additional information.</string>
     <string name="filedetails_download">Download</string>
     <string name="filedetails_sync_file">Sync</string>
     <string name="filedetails_renamed_in_upload_msg">File renamed %1$s during upload</string>
@@ -127,20 +129,20 @@
     <string name="common_back">Back</string>
     <string name="common_save">Save</string>
     <string name="common_error">Error</string>
-    <string name="common_loading">Loading &#8230;</string>
+    <string name="common_loading">Loading…</string>
     <string name="common_unknown">unknown</string>
     <string name="common_error_unknown">Unknown error</string>
     <string name="common_pending">Pending</string>
     <string name="common_delete">Delete</string>
+    <string name="common_send">Send</string>
     <string name="about_title">About</string>
-    <string name="change_password">Change password</string>
     <string name="delete_account">Remove account</string>
     <string name="delete_account_warning">Remove account %s and delete all local files?\n\nDeletion cannot be undone.</string>
     <string name="avatar">Avatar</string>
     <string name="active_user">Active user</string>
-    <string name="upload_chooser_title">Upload from &#8230;</string>
+    <string name="upload_chooser_title">Upload from…</string>
     <string name="uploader_info_dirname">Folder name</string>
-    <string name="uploader_upload_in_progress_ticker">Uploading &#8230;</string>
+    <string name="uploader_upload_in_progress_ticker">Uploading…</string>
     <string name="uploader_upload_in_progress_content">%1$d%% Uploading %2$s</string>
     <string name="uploader_upload_succeeded_ticker">Uploaded</string>
     <string name="uploader_upload_succeeded_content_single">%1$s uploaded</string>
@@ -167,7 +169,7 @@
     <string name="uploads_view_upload_status_waiting_exit_power_save_mode">Waiting to exit power save mode</string>
     <string name="uploads_view_later_waiting_to_upload">Waiting to upload</string>
     <string name="uploads_view_group_header" translatable="false">%1$s (%2$d)</string>
-    <string name="downloader_download_in_progress_ticker">Downloading &#8230;</string>
+    <string name="downloader_download_in_progress_ticker">Downloading…</string>
     <string name="downloader_download_in_progress_content">%1$d%% Downloading %2$s</string>
     <string name="downloader_download_succeeded_ticker">Downloaded</string>
     <string name="downloader_download_succeeded_content">%1$s downloaded</string>
@@ -201,7 +203,9 @@
     <string name="foreign_files_remote_text">Remote: %1$s</string>
     <string name="upload_query_move_foreign_files">Insufficient space prevents copying the selected files into the %1$s folder. Would you like to move them there instead?</string>
     <string name="pass_code_enter_pass_code">Please enter your passcode</string>
-    
+    <string name="default_credentials_wrong">Incorrect credentials</string>
+    <string name="credentials_disabled">Credentials disabled</string>
+
     <string name="pass_code_configure_your_pass_code">Enter your passcode</string>
     <string name="pass_code_configure_your_pass_code_explanation">The passcode will be requested every time the app is started</string>
     <string name="pass_code_reenter_your_pass_code">Please reenter your passcode</string>
@@ -210,13 +214,12 @@
     <string name="pass_code_wrong">Incorrect passcode</string>
     <string name="pass_code_removed">Passcode deleted</string>
     <string name="pass_code_stored">Passcode stored</string>
-    
+
     <string name="media_notif_ticker">%1$s music player</string>
     <string name="media_state_playing">%1$s (playing)</string>
     <string name="media_state_loading">%1$s (loading)</string>
     <string name="media_event_done">%1$s playback finished</string>
     <string name="media_err_nothing_to_play">No media file found</string>
-    <string name="media_err_no_account">No account provided</string>
     <string name="media_err_not_in_owncloud">The file is not in a valid account</string>
     <string name="media_err_unsupported">Unsupported media codec</string>
     <string name="media_err_io">Could not read the media file</string>
@@ -224,15 +227,13 @@
     <string name="media_err_timeout">Attempt to play file timed out</string>
     <string name="media_err_invalid_progressive_playback">The media file can not be streamed</string>
     <string name="media_err_unknown">The built-in media player is unable to play the media file</string>
-    <string name="media_err_security_ex">A security error was encountered trying to play %1$s</string>
-    <string name="media_err_io_ex">Input error while trying to play %1$s</string>
-    <string name="media_err_unexpected">Unexpected error while trying to play %1$s</string>
+    <string name="media_err_playing">Unexpected error while trying to play %1$s</string>
     <string name="media_rewind_description">Rewind button</string>
     <string name="media_play_pause_description">Play or pause button</string>
     <string name="media_forward_description">Fast forward button</string>
 
-	<string name="auth_getting_authorization">Getting authorization &#8230;</string>
-	<string name="auth_trying_to_login">Trying to log in &#8230;</string>
+    <string name="auth_getting_authorization">Getting authorization…</string>
+    <string name="auth_trying_to_login">Trying to log in…</string>
 	<string name="auth_no_net_conn_title">No network connection</string>
 	<string name="auth_nossl_plain_ok_title">Secure connection unavailable.</string>
 	<string name="auth_connection_established">Connection established</string>
@@ -240,7 +241,9 @@
 	<string name="auth_not_configured_title">Malformed server configuration</string>
 	<string name="auth_account_not_new">An account for the same user and server already exists on the device</string>
 	<string name="auth_account_not_the_same">The entered user does not match the user of this account</string>
+	<string name="auth_unknown_error_http_title">Unknown HTTP error occurred!</string>
 	<string name="auth_unknown_error_title">Unknown error occurred!</string>
+	<string name="auth_unknown_error_exception_title">Unknown error: %1$s</string>
 	<string name="auth_unknown_host_title">Could not find host</string>
 	<string name="auth_incorrect_path_title">Server not found</string>
 	<string name="auth_timeout_title">The server took too long to respond</string>
@@ -257,18 +260,18 @@
 	<string name="auth_expired_oauth_token_toast">Your authorization expired. Please, authorize again</string>
 	<string name="auth_expired_basic_auth_toast">Please enter the current password</string>
 	<string name="auth_expired_saml_sso_token_toast">Your session expired. Please connect again</string>
-    <string name="auth_connecting_auth_server">Connecting to authentication server &#8230;</string>
+    <string name="auth_connecting_auth_server">Connecting to authentication server…</string>
 	<string name="auth_unsupported_multiaccount">%1$s does not support multiple accounts</string>
 	<string name="auth_fail_get_user_name">Your server is not returning a correct user ID, please contact an admin</string>
 	<string name="auth_can_not_auth_against_server">Cannot authenticate to this server</string>
     <string name="auth_account_does_not_exist">The account is not added on this device yet</string>
-    <string name="auth_access_failed">Access failed</string>
+    <string name="auth_access_failed">Access failed: %1$s</string>
+    <string name="auth_illegal_login_used">Illegal login data URL used</string>
 
     <string name="favorite">Set as available offline</string>
     <string name="unfavorite">Unset as available offline</string>
-    <string name="favorite_real">Set as favorite</string>
-    <string name="unset_favorite_real">Unset favorite</string>
-    <string name="favorite_switch">Available offline</string>
+    <string name="favorite_real">Add to favorites</string>
+    <string name="unset_favorite_real">Remove from favourites</string>
     <string name="encrypted">Set as encrypted</string>
     <string name="unset_encrypted">Unset encryption</string>
     <string name="common_rename">Rename</string>
@@ -286,15 +289,15 @@
     <string name="filename_forbidden_characters">Forbidden characters: / \\ &lt; &gt; : " | ? *</string>
     <string name="filename_forbidden_charaters_from_server">Filename contains at least one invalid character</string>
     <string name="filename_empty">Filename cannot be empty</string>
-    <string name="wait_a_moment">Wait a moment &#8230;</string>
+    <string name="wait_a_moment">Wait a moment…</string>
     <string name="wait_checking_credentials">Checking stored credentials</string>
     <string name="filedisplay_no_file_selected">No file selected</string>
-    <string name="activity_chooser_title">Send link to &#8230;</string>
+    <string name="activity_chooser_title">Send link to…</string>
     <string name="wait_for_tmp_copy_from_private_storage">Copying file from private storage</string>
-    
+
     <string name="oauth_check_onoff">Log in with OAuth 2.0</string>
-    <string name="oauth_login_connection">Connecting to OAuth 2.0 server &#8230;</string>
-        
+    <string name="oauth_login_connection">Connecting to OAuth 2.0 server…</string>
+
     <string name="ssl_validator_header">The identity of the server could not be verified</string>
     <string name="ssl_validator_reason_cert_not_trusted">- The server certificate is not trusted</string>
     <string name="ssl_validator_reason_cert_expired">- The server certificate expired</string>
@@ -350,7 +353,6 @@
     <string name="prefs_instant_upload_path_use_subfolders_title">Use subfolders</string>
     <string name="prefs_instant_upload_path_use_subfolders_summary">Store in subfolders based on year and month</string>
 
-	<string name="share_link_no_support_share_api">Sharing is not enabled on your server. Please contact your admin</string>
 	<string name="share_link_file_no_exist">Unable to share. Please check whether the file exists</string>
 	<string name="share_link_file_error">An error occurred while trying to share this file or folder</string>
 	<string name="unshare_link_file_no_exist">Unable to unshare. Please check whether the file exists</string>
@@ -363,9 +365,9 @@
     <string name="activity_chooser_send_file_title">Send</string>
 
     <string name="copy_link">Copy link</string>
-    <string name="clipboard_text_copied">Copied to clipboard</string>
+    <string name="clipboard_text_copied">Link copied</string>
     <string name="clipboard_no_text_to_copy">Received no text to copy to clipboard</string>
-    <string name="clipboard_uxexpected_error">Unexpected error while copying to clipboard</string>
+    <string name="clipboard_unexpected_error">Unexpected error while copying to clipboard</string>
     <string name="clipboard_label">Text copied from %1$s</string>
 
     <string name="error_cant_bind_to_operations_service">Critical error: Unable to perform operations</string>
@@ -386,14 +388,14 @@
     <string name="downloader_download_file_not_found">The file is no longer available on the server</string>
 
     <string name="file_migration_dialog_title">Updating storage path</string>
-    <string name="file_migration_preparing">Preparing migration &#8230;</string>
-    <string name="file_migration_checking_destination">Checking destination &#8230;</string>
-    <string name="file_migration_saving_accounts_configuration">Saving account config &#8230;</string>
-    <string name="file_migration_waiting_for_unfinished_sync">Awaiting full sync &#8230;</string>
-    <string name="file_migration_migrating">Moving data &#8230;</string>
-    <string name="file_migration_updating_index">Updating index &#8230;</string>
-    <string name="file_migration_cleaning">Cleaning &#8230;</string>
-    <string name="file_migration_restoring_accounts_configuration">Restoring account config &#8230;</string>
+    <string name="file_migration_preparing">Preparing migration…</string>
+    <string name="file_migration_checking_destination">Checking destination…</string>
+    <string name="file_migration_saving_accounts_configuration">Saving account config…</string>
+    <string name="file_migration_waiting_for_unfinished_sync">Awaiting full sync…</string>
+    <string name="file_migration_migrating">Moving data…</string>
+    <string name="file_migration_updating_index">Updating index…</string>
+    <string name="file_migration_cleaning">Cleaning…</string>
+    <string name="file_migration_restoring_accounts_configuration">Restoring account config…</string>
     <string name="file_migration_ok_finished">Finished</string>
     <string name="file_migration_failed_not_enough_space">More space needed</string>
     <string name="file_migration_failed_not_writable">Could not write to destination file</string>
@@ -417,7 +419,7 @@
 	<string name="log_send_history_button">Send history</string>
 	<string name="log_send_no_mail_app">No app for sending logs found. Please install an e-mail client.</string>
 	<string name="log_send_mail_subject">%1$s Android app logs</string>
-	<string name="log_progress_dialog_text">Loading data &#8230;</string>
+    <string name="log_progress_dialog_text">Loading data…</string>
 
 	<string name="saml_authentication_required_text">Password required</string>
 	<string name="saml_authentication_wrong_pass">Wrong password</string>
@@ -463,8 +465,8 @@
     <string name="set_picture_as">Use picture as</string>
     <string name="set_as">Set As</string>
 
-    <string name="prefs_instant_behaviour_dialogTitle">Original file will be &#8230;</string>
-    <string name="prefs_instant_behaviour_title">Original file will be &#8230;</string>
+    <string name="prefs_instant_behaviour_dialogTitle">Original file will be…</string>
+    <string name="prefs_instant_behaviour_title">Original file will be…</string>
     <string name="select_all">Select all</string>
     <string name="deselect_all">Deselect all</string>
 
@@ -478,33 +480,40 @@
     <string name="share_with_user_section_title">Share with users and groups</string>
     <string name="share_no_users">No data shared with users yet</string>
     <string name="share_add_user_or_group">Add user or group</string>
-    <string name="share_via_link_section_title">Share link</string>
-    <string name="share_via_link_expiration_date_label">Set expiration date</string>
+    <string name="share_via_link_edit_permission_label">Allow editing</string>
     <string name="share_via_link_password_label">Protect with password</string>
     <string name="share_via_link_password_title">Secured</string>
-    <string name="share_via_link_edit_permission_label">Allow edits</string>
+    <string name="share_via_link_expiration_date_label">Set expiration date</string>
+    <string name="share_via_link_menu_password_label">Password protect (%1$s)</string>
+    <string name="share_expiration_date_label">Expires %1$s</string>
+    <string name="share_no_expiration_date_label">Set expiration date</string>
+    <string name="share_via_link_section_title">Share link</string>
+    <string name="share_via_link_send_link_label">Send link</string>
+    <string name="share_password_title">Password-protected</string>
+    <string name="share_no_password_title">Set password</string>
+    <string name="edit_permission_label">edit</string>
     <string name="share_via_link_hide_file_listing_permission_label">Hide file listing</string>
     <string name="share_get_public_link_button">Get link</string>
-    <string name="share_with_title">Share with &#8230;</string>
+    <string name="share_with_title">Share with…</string>
     <string name="share_with_edit_title">Share with %1$s</string>
+    <string name="share_via_link_unset_password">Unset</string>
 
-    <string name="share_search">Search</string>
+    <string name="share_search">Name, federated cloud ID or email address…</string>
 
     <string name="search_users_and_groups_hint">Search users and groups</string>
     <string name="share_group_clarification">%1$s (group)</string>
     <string name="share_remote_clarification">%1$s (remote)</string>
     <string name="share_email_clarification">%1$s (email)</string>
+    <string name="share_room_clarification">%1$s (conversation)</string>
     <string name="share_known_remote_clarification">%1$s ( at %2$s )</string>
 
     <string name="share_sharee_unavailable">Upgrade the server version to allow sharing between users from within their clients.\nPlease contact your admin</string>
-    <string name="filedetails_share_link_enable">Share by link enabled</string>
-    <string name="filedetails_share_link_disable">Not shared by link</string>
-    <string name="filedetails_share_users_with_access">Users and groups with access</string>
+    <string name="share_privilege_unshare">Unshare</string>
     <string name="share_privilege_can_share">can share</string>
     <string name="share_privilege_can_edit">can edit</string>
-    <string name="share_privilege_can_edit_create">create</string>
-    <string name="share_privilege_can_edit_change">change</string>
-    <string name="share_privilege_can_edit_delete">delete</string>
+    <string name="share_privilege_can_edit_create">can create</string>
+    <string name="share_privilege_can_edit_change">can change</string>
+    <string name="share_privilege_can_edit_delete">can delete</string>
 
     <string name="action_retry_uploads">Retry failed uploads</string>
     <string name="action_clear_failed_uploads">Clear failed uploads</string>
@@ -523,6 +532,7 @@
     <string name="confirmation_remove_files_alert">Do you really want to delete the selected items?</string>
     <string name="confirmation_remove_folders_alert">Do you really want to delete the selected items and their contents?</string>
     <string name="maintenance_mode">Server in maintenance mode</string>
+    <string name="offline_mode">No internet connection</string>
 
     <string name="uploads_view_upload_status_waiting_for_charging">Awaiting charge</string>
     <string name="actionbar_search">Search</string>
@@ -553,11 +563,11 @@
     <string name="participate_rc_fdroid">Get release candidate from F-Droid app</string>
     <string name="participate_dev_fdroid">Get development release from F-Droid app</string>
     <string name="participate_dev_direct_download">Download development release directly</string>
-    <string name="move_to">Move to &#8230;</string>
-    <string name="copy_to">Copy to &#8230;</string>
-    <string name="choose_remote_folder">Choose remote folder &#8230;</string>
-    <string name="choose_local_folder">Choose local folder &#8230;</string>
-    <string name="synced_folders_loading_folders">Loading folders &#8230;</string>
+    <string name="move_to">Move to…</string>
+    <string name="copy_to">Copy to…</string>
+    <string name="choose_remote_folder">Choose remote folder…</string>
+    <string name="choose_local_folder">Choose local folder…</string>
+    <string name="synced_folders_loading_folders">Loading folders…</string>
     <string name="synced_folders_no_results">No media folders found.</string>
     <string name="synced_folders_preferences">Preferences for auto uploading</string>
     <string name="synced_folders_new_info">Instant uploading has been revamped completely. Re-configure your auto upload from within the main menu.\n\nEnjoy the new and extended auto uploading.</string>
@@ -575,7 +585,7 @@
         <item quantity="other">%d selected</item>
     </plurals>
 
-    <string name="notifications_loading_activity">Loading notifications &#8230;</string>
+    <string name="notifications_loading_activity">Loading notifications…</string>
     <string name="notifications_no_results_headline">No notifications</string>
     <string name="notifications_no_results_message">Please check back later.</string>
 
@@ -590,28 +600,7 @@
 
     <!-- What's new feature and texts to show -->
     <string name="whats_new_title">New in %1$s</string>
-
-    <!-- Welcome to Nc intro features -->
-    <string name="welcome_feature_1_title">A safe home for all your data</string>
-    <string name="welcome_feature_1_text">Access, share and protect your files at home and at work</string>
-
-    <string name="welcome_feature_2_title">Multi account</string>
-    <string name="welcome_feature_2_text">Connect to all your clouds</string>
-
-    <string name="welcome_feature_3_title">Auto upload</string>
-    <string name="welcome_feature_3_text">Keep your photos safe</string>
-
-    <string name="whats_new_end_to_end_encryption_title">End-to-end encryption</string>
-    <string name="whats_new_end_to_end_encryption_content">Tap to encrypt, from any client. Add new ones by copying 12 words over.</string>
-    <string name="whats_new_resized_images_title">Adaptive images</string>
-    <string name="whats_new_resized_images_content">Small images are fast and work great for sharing. Zoom in to download a full version.</string>
-    <string name="whats_new_ipv6_title">IPv6 support</string>
-    <string name="whats_new_ipv6_content">IPv6 when the server supports it, IPv4 if not.</string>
-
     <string name="whats_new_skip">Skip</string>
-
-    <string name="fingerprint_scan_finger">Please scan your finger</string>
-    <string name="fingerprint_unknown">Finger not recognized</string>
 
     <!-- User information -->
     <string name="user_info_email">E-mail</string>
@@ -624,7 +613,7 @@
 
     <!-- Activities -->
     <string name="activities_no_results_headline">No activity yet</string>
-    <string name="activities_no_results_message">This stream will show events like\nadditions, changes and shares</string>
+    <string name="activities_no_results_message">No events like additions, changes and shares yet</string>
     <string name="prefs_category_about">About</string>
 
     <string name="actionbar_contacts">Back up contacts</string>
@@ -643,8 +632,6 @@
     <string name="contacts_preferences_backup_scheduled">Backup scheduled and will start shortly</string>
     <string name="contacts_preferences_import_scheduled">Import scheduled and will start shortly</string>
 
-    <!-- Notifications -->
-    <string name="new_notification_received">New notification received</string>
     <string name="drawer_logout">Log out</string>
     <string name="picture_set_as_no_app">No app found to set a picture with</string>
     <string name="privacy">Privacy</string>
@@ -663,8 +650,8 @@
     <string name="fallback_weblogin_back">Back</string>
     <string name="fallback_weblogin_text">Revert to old login method</string>
 
-    <string name="foreground_service_upload">Uploading files &#8230;</string>
-    <string name="foreground_service_download">Downloading files &#8230;</string>
+    <string name="foreground_service_upload">Uploading files…</string>
+    <string name="foreground_service_download">Downloading files…</string>
 
     <string name="prefs_sourcecode">Get source code</string>
     <string name="prefs_license">License</string>
@@ -687,19 +674,17 @@
     <string name="drawer_middle_account">Middle account</string>
     <string name="drawer_end_account">Last account</string>
     <string name="contactlist_item_icon">User icon for contact list</string>
-    <string name="activity_icon">Activity icon</string>
-    <string name="file_icon">File icon</string>
-    <string name="user_icon">User icon</string>
-    <string name="fingerprint_icon">Fingerprint icon</string>
-    <string name="favorite_icon">Favorite icon</string>
-    <string name="shared_via_link_icon">Shared via link icon</string>
-    <string name="synced_icon">Synced icon</string>
-    <string name="available_offline_icon">Available offline icon</string>
+    <string name="activity_icon">Activity</string>
+    <string name="file_icon">File</string>
+    <string name="user_icon">User</string>
+    <string name="favorite_icon">Favorite</string>
+    <string name="synced_icon">Synced</string>
+    <string name="available_offline_icon">Available offline</string>
     <string name="checkbox">Checkbox</string>
-    <string name="thumbnail">Thumbnail</string>
-    <string name="shared_icon">Shared icon</string>
-    <string name="overflow_menu">Overflow menu</string>
-    <string name="share_file_icon">Share file icon</string>
+    <string name="shared_icon_share">share</string>
+    <string name="shared_icon_shared_via_link">shared via link</string>
+    <string name="shared_icon_shared">shared</string>
+    <string name="overflow_menu">More menu</string>
     <string name="sort_by_name_ascending">A - Z</string>
     <string name="sort_by_modification_date_ascending">Newest first</string>
     <string name="sort_by_size_descending">Biggest first</string>
@@ -718,7 +703,7 @@
     <string name="store_full_dev_desc">The copylefted libre Nextcloud Android app, gives you mobile freedom.\nThis is the official development version, featuring a daily sample of any new untested functionality, which may cause instability and data loss. The app is for users willing to test, and report bugs should they occur. Do not use it for your productive work!\n\nBoth the official dev and regular version are available on F-droid, and can be installed at the same time.</string>
 
     <string name="prefs_category_dev">Dev</string>
-    <string name="dev_version_no_information_available">No information available.</string>
+    <string name="dev_version_no_information_available">No info available.</string>
     <string name="dev_version_no_new_version_available">No new version available.</string>
     <string name="folder_icon">Folder icon</string>
     <string name="dev_version_new_version_available">New version available</string>
@@ -738,7 +723,7 @@
     <string name="notification_channel_file_sync_description">Shows file sync progress and results</string>
     <string name="notification_channel_file_observer_name">File observer</string>
     <string name="notification_channel_file_observer_description">Monitors files for changes</string>
-  
+
     <string name="account_not_found">Account not found!</string>
 
     <string name="screenshot_01_gridView">A safe home for all your data</string>
@@ -747,38 +732,117 @@
     <string name="screenshot_04_accounts">Connect to different accounts</string>
     <string name="screenshot_05_autoUpload">Automatically upload your photos &amp; videos</string>
     <string name="screenshot_06_davdroid">Sync calendar &amp; contacts with DAVdroid</string>
-    
+
     <string name="userinfo_no_info_headline">No personal info set</string>
     <string name="userinfo_no_info_text">Add name, picture and contact details on your profile page.</string>
     <string name="drawer_header_background">Background image of drawer header</string>
     <string name="account_icon">Account icon</string>
-    
+
     <string name="end_to_end_encryption_folder_not_empty">This folder is not empty.</string>
     <string name="end_to_end_encryption_wrong_password">Error while decrypting. Wrong password?</string>
-    <string name="end_to_end_encryption_decrypting">Decrypting&#8230;</string>
-    <string name="end_to_end_encryption_retrieving_keys">Retrieving keys&#8230;</string>
+    <string name="end_to_end_encryption_decrypting">Decrypting…</string>
+    <string name="end_to_end_encryption_retrieving_keys">Retrieving keys…</string>
     <string name="end_to_end_encryption_enter_password">Please enter password to decrypt private key.</string>
-    <string name="end_to_end_encryption_generating_keys">Generating new keys&#8230;</string>
+    <string name="end_to_end_encryption_generating_keys">Generating new keys…</string>
     <string name="end_to_end_encryption_keywords_description">All 12 words together make a very strong password, letting only you view and make use of your encrypted files. Please write it down and keep it somewhere safe.</string>
     <string name="end_to_end_encryption_title">Set up encryption</string>
     <string name="end_to_end_encryption_passphrase_title">Make note of your 12 word encryption password</string>
     <string name="end_to_end_encryption_not_supported">Encryption only works on KitKat(4.4) and beyond.</string>
-    <string name="end_to_end_encryption_not_enabled">End to end encryption disabled on server.</string>
+    <string name="end_to_end_encryption_not_enabled">End-to-end encryption disabled on server.</string>
     <string name="end_to_end_encryption_confirm_button">Set up encryption</string>
-    <string name="end_to_end_encryption_password">Password&#8230;</string>
+    <string name="end_to_end_encryption_password">Password…</string>
     <string name="end_to_end_encryption_unsuccessful">Could not save keys, please try again.</string>
     <string name="end_to_end_encryption_dialog_close">Close</string>
     <string name="end_to_end_encryption_storing_keys">Storing keys</string>
     <string name="copy_move_to_encrypted_folder_not_supported">Copy/move into encrypted folder currently not supported.</string>
     <string name="untrusted_domain">Access through untrusted domain. Please see documentation for further info.</string>
-    <string name="upload_list_loading">Loading uploads…</string>
     <string name="notification_channel_push_name">Push notifications</string>
-    <string name="notification_channel_push_description">Show push notifications sent by server, e.g. when mentioned in comments, you receive a new remote share or an announcement was posted by an admin.</string>
+    <string name="notification_channel_push_description">Show push notifications sent by the server: Mentions in comments, reception of new remote shares, announcements posted by an admin etc.</string>
     <string name="sendbutton_description">Send button icon</string>
 
-    <string name="mf_pin_required_text">To protect your data from unauthorized access it is mandatory to configure a PIN or TouchID for this application.</string>
-    <string name="mf_pin_required_pin">Configure PIN</string>
-    <string name="mf_pin_required_fingerprint">Use Fingerprint</string>
-    <string name="mf_pin_required_title">PIN or Fingerprint required</string>
+    <string name="oauth_2_0_auth_end_point_address_hint">Auth end point address</string>
+    <string name="oauth_2_0_access_end_point_address_hint">Access end point address</string>
+    <string name="hidden_character" translatable="false">*</string>
+    <string name="hint_name">Name</string>
+    <string name="hint_password">Password</string>
+    <string name="add_to_cloud">Add to %1$s</string>
+    <string name="upload_files">Upload files</string>
+    <string name="upload_content_from_other_apps">Upload content from other apps</string>
+    <string name="create_new_folder">Create new folder</string>
+    <string name="uploads_view_upload_status_virus_detected">Virus detected. Upload cannot be completed!</string>
+    <string name="tags">Tags</string>
+    <string name="sharee_add_failed">Adding sharee failed</string>
+    <string name="unsharing_failed">Unsharing failed</string>
+    <string name="updating_share_failed">Updating share failed</string>
+    <string name="prefs_e2e_mnemonic">E2E mnemonic</string>
+    <string name="prefs_e2e_no_device_credentials">To show mnemonic please enable device credentials.</string>
+    <string name="whats_new_device_credentials_title">Use Android\'s device internal protection</string>
+    <string name="login">Log in</string>
+    <string name="signup_with_provider">Sign up with provider</string>
+    <string name="host_your_own_server">Host your own server</string>
+    <string name="first_run_1_text">Keep your data secure and under your control</string>
+    <string name="first_run_2_text">Secure collaboration &amp; file exchange</string>
+    <string name="first_run_3_text">Easy-to-use web mail, calendering &amp; contacts</string>
+    <string name="first_run_4_text">Screensharing, online meetings &amp; web conferences</string>
+    <string name="whats_new_device_credentials_content">Use anything like a pattern, password, pin or your fingerprint to keep your data safe.</string>
+    <string name="restore_button_description">Restore deleted file</string>
+	<string name="restore">Restore file</string>
+    <string name="new_version_was_created">New version was created</string>
+    <string name="new_comment">New comment…</string>
+    <string name="error_comment_file">Error commenting file</string>
+    <string name="file_version_restored_successfully">Successfully restored file version.</string>
+    <string name="file_version_restored_error">Error restoring file version!</string>
+    <string name="notification_channel_general_name">General notifications</string>
+    <string name="notification_channel_general_description">Show notifications for new media folders and similar</string>
+    <string name="new_media_folder_detected">New %1$s media folder detected.</string>
+    <string name="new_media_folder_photos">photo</string>
+    <string name="new_media_folder_videos">video</string>
+    <string name="outdated_server">The server has reached end of life, please upgrade!</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="feedback_no_mail_app">No app available to send mails!</string>
+    <string name="drawer_item_trashbin">Deleted files</string>
+    <string name="trashbin_activity_title">Deleted files</string>
+    <string name="action_empty_trashbin">Empty trashbin</string>
+    <string name="trashbin_loading_failed">Loading trashbin failed!</string>
+    <string name="trashbin_file_not_deleted">File %1$s could not be deleted!</string>
+    <string name="trashbin_file_not_restored">File %1$s could not be restored!</string>
+    <string name="trashbin_not_emptied">Files could not be deleted permanently!</string>
+    <string name="stream">Stream with…</string>
+    <string name="stream_not_possible_headline">Internal streaming not possible</string>
+    <string name="stream_not_possible_message">Please download media instead or use external app.</string>
+    <string name="folder_already_exists">Folder already exists</string>
+    <string name="actionbar_open_as_richdocument">Open with Collabora</string>
+    <string name="notification_icon">Notification icon</string>
+    <string name="folder_confirm_create">Create</string>
+    <string name="file_delete">Delete</string>
+    <string name="file_keep">Keep</string>
+    <string name="file_rename">Rename</string>
+    <string name="fab_label">Add or upload</string>
+    <string name="account_creation_failed">Account creation failed</string>
+    <string name="single_sign_on_request_token" formatted="true">Allow %1$s to access your Nextcloud account %2$s?</string>
+    <string name="permission_deny">Deny</string>
+    <string name="permission_allow">Allow</string>
+    <string name="share_send_note">Note to recipient</string>
+    <string name="note_confirm">Send</string>
+    <string name="send_note">Send note to recipient</string>
+    <string name="note_could_not_sent">Could not send note</string>
+    <string name="hint_note">Note</string>
+    <string name="no_browser_available">No app available to handle links</string>
+    <string name="no_pdf_app_available">No App available to handle PDF</string>
+    <string name="share_via_link_hide_download">Hide download</string>
 
+    <string name="richdocuments_failed_to_load_document">Failed to load document!</string>
+    <string name="create_new_document">Create new document</string>
+    <string name="create_new_spreadsheet">Create new spreadsheet</string>
+    <string name="create_new_presentation">Create new presentation</string>
+    <string name="select_template">Select template</string>
+    <string name="filename_hint">Filename</string>
+    <string name="thumbnail">Thumbnail</string>
+    <string name="enter_filename">Please enter a filename</string>
+    <string name="create_file_from_template">Creating file from template…</string>
+    <string name="error_retrieving_templates">Error retrieving templates</string>
+
+    <string name="mindfabrik_forcelock_title">Lock Code is required</string>
+    <string name="mindfabrik_forcelock_text">Please configure a Lock Code to protect your data.</string>
+    <string name="mindfabrik_forelock_button">Continue</string>
 </resources>

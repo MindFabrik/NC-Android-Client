@@ -24,6 +24,7 @@ package com.owncloud.android.ui.activity;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AuthenticatorException;
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -38,7 +39,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.view.View;
-import android.widget.Toast;
 
 import com.owncloud.android.MainApp;
 import com.owncloud.android.R;
@@ -76,20 +76,22 @@ import com.owncloud.android.ui.helpers.FileOperationsHelper;
 import com.owncloud.android.utils.DisplayUtils;
 import com.owncloud.android.utils.ErrorMessageAdapter;
 import com.owncloud.android.utils.FilesSyncHelper;
-
-import java.util.concurrent.ExecutionException;
+import com.owncloud.android.utils.ThemeUtils;
 
 
 /**
  * Activity with common behaviour for activities handling {@link OCFile}s in ownCloud {@link Account}s .
  */
 public abstract class FileActivity extends DrawerActivity
-        implements OnRemoteOperationListener, ComponentsGetter, SslUntrustedCertDialog.OnSslUntrustedCertListener {
+        implements OnRemoteOperationListener, ComponentsGetter, SslUntrustedCertDialog.OnSslUntrustedCertListener,
+        LoadingVersionNumberTask.VersionDevInterface {
 
     public static final String EXTRA_FILE = "com.owncloud.android.ui.activity.FILE";
     public static final String EXTRA_ACCOUNT = "com.owncloud.android.ui.activity.ACCOUNT";
     public static final String EXTRA_FROM_NOTIFICATION = "com.owncloud.android.ui.activity.FROM_NOTIFICATION";
     public static final String APP_OPENED_COUNT = "APP_OPENED_COUNT";
+    public static final String EXTRA_SEARCH = "com.owncloud.android.ui.activity.SEARCH";
+    public static final String EXTRA_SEARCH_QUERY = "com.owncloud.android.ui.activity.SEARCH_QUERY";
 
     public static final String TAG = FileActivity.class.getSimpleName();
 
@@ -118,15 +120,16 @@ public abstract class FileActivity extends DrawerActivity
 
     private FileOperationsHelper mFileOperationsHelper;
 
-    private ServiceConnection mOperationsServiceConnection = null;
+    private ServiceConnection mOperationsServiceConnection;
 
-    private OperationsServiceBinder mOperationsServiceBinder = null;
+    private OperationsServiceBinder mOperationsServiceBinder;
 
-    private boolean mResumed = false;
+    private boolean mResumed;
 
-    protected FileDownloaderBinder mDownloaderBinder = null;
-    protected FileUploaderBinder mUploaderBinder = null;
-    private ServiceConnection mDownloadServiceConnection, mUploadServiceConnection = null;
+    protected FileDownloaderBinder mDownloaderBinder;
+    protected FileUploaderBinder mUploaderBinder;
+    private ServiceConnection mDownloadServiceConnection;
+    private ServiceConnection mUploadServiceConnection;
 
 
 
@@ -155,9 +158,7 @@ public abstract class FileActivity extends DrawerActivity
             mFileOperationsHelper.setOpIdWaitingFor(
                     savedInstanceState.getLong(KEY_WAITING_FOR_OP_ID, Long.MAX_VALUE)
                     );
-            if (getSupportActionBar() != null) {
-                getSupportActionBar().setTitle(savedInstanceState.getString(KEY_ACTION_BAR_TITLE));
-            }
+            ThemeUtils.setColoredTitle(getSupportActionBar(), savedInstanceState.getString(KEY_ACTION_BAR_TITLE), this);
         } else {
             account = getIntent().getParcelableExtra(FileActivity.EXTRA_ACCOUNT);
             mFile = getIntent().getParcelableExtra(FileActivity.EXTRA_FILE);
@@ -386,7 +387,7 @@ public abstract class FileActivity extends DrawerActivity
             }
             OwnCloudClient client;
             OwnCloudAccount ocAccount = new OwnCloudAccount(account, context);
-            client = (OwnCloudClientManagerFactory.getDefaultSingleton().removeClientFor(ocAccount));
+            client = OwnCloudClientManagerFactory.getDefaultSingleton().removeClientFor(ocAccount);
             if (client != null) {
                 OwnCloudCredentials cred = client.getCredentials();
                 if (cred != null) {
@@ -445,9 +446,8 @@ public abstract class FileActivity extends DrawerActivity
 
         } else {
             if (!operation.transferWasRequested()) {
-                Toast msg = Toast.makeText(this, ErrorMessageAdapter.getErrorCauseMessage(result,
-                        operation, getResources()), Toast.LENGTH_LONG);
-                msg.show();
+                DisplayUtils.showSnackMessage(this, ErrorMessageAdapter.getErrorCauseMessage(result,
+                        operation, getResources()));
             }
             supportInvalidateOptionsMenu();
         }
@@ -495,7 +495,7 @@ public abstract class FileActivity extends DrawerActivity
 
 
     private void doOnResumeAndBound() {
-        mOperationsServiceBinder.addOperationListener(FileActivity.this, mHandler);
+        mOperationsServiceBinder.addOperationListener(this, mHandler);
         long waitingForOpId = mFileOperationsHelper.getOpIdWaitingFor();
         if (waitingForOpId <= Integer.MAX_VALUE) {
             boolean wait = mOperationsServiceBinder.dispatchResultIfFinished((int)waitingForOpId,
@@ -553,6 +553,7 @@ public abstract class FileActivity extends DrawerActivity
     public void restart() {
         Intent i = new Intent(this, FileDisplayActivity.class);
         i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        i.setAction(FileDisplayActivity.RESTART);
         startActivity(i);
 
         fetchExternalLinks(false);
@@ -597,45 +598,51 @@ public abstract class FileActivity extends DrawerActivity
             int count = arbitraryDataProvider.getIntegerValue(FilesSyncHelper.GLOBAL, APP_OPENED_COUNT);
 
             if (count > 10 || count == -1) {
-                checkForNewDevVersion(view, context, false);
+                checkForNewDevVersion(this, context);
             }
         }
     }
 
-    public static void checkForNewDevVersion(View view, Context context, boolean openDirectly) {
-        Integer latestVersion = -1;
+    @Override
+    public void returnVersion(Integer latestVersion) {
+        showDevSnackbar(this, latestVersion, false);
+    }
+
+    public static void checkForNewDevVersion(LoadingVersionNumberTask.VersionDevInterface callback, Context context) {
+        String url = context.getString(R.string.dev_latest);
+        LoadingVersionNumberTask loadTask = new LoadingVersionNumberTask(callback);
+        loadTask.execute(url);
+    }
+
+    public static void showDevSnackbar(Activity activity, Integer latestVersion, boolean openDirectly) {
         Integer currentVersion = -1;
         try {
-            currentVersion = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionCode;
-            String url = context.getString(R.string.dev_latest);
-            LoadingVersionNumberTask loadTask = new LoadingVersionNumberTask();
-            loadTask.execute(url);
-            latestVersion = loadTask.get();
-        } catch (InterruptedException | ExecutionException | PackageManager.NameNotFoundException e) {
-            Log_OC.e(TAG, "Error detecting app version", e);
+            currentVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0).versionCode;
+        } catch (PackageManager.NameNotFoundException e) {
+            Log_OC.e(TAG, "Package not found", e);
         }
+
         if (latestVersion == -1 || currentVersion == -1) {
-            Snackbar.make(view, R.string.dev_version_no_information_available, Snackbar.LENGTH_LONG).show();
+            DisplayUtils.showSnackMessage(activity, R.string.dev_version_no_information_available, Snackbar.LENGTH_LONG);
         }
         if (latestVersion > currentVersion) {
             if (openDirectly) {
-                String devApkLink = (String) context.getText(R.string.dev_link) + latestVersion + ".apk";
+                String devApkLink = (String) activity.getText(R.string.dev_link) + latestVersion + ".apk";
                 Uri uriUrl = Uri.parse(devApkLink);
                 Intent intent = new Intent(Intent.ACTION_VIEW, uriUrl);
-                context.startActivity(intent);
+                DisplayUtils.startIntentIfAppAvailable(intent, activity, R.string.no_browser_available);
             } else {
-                Integer finalLatestVersion = latestVersion;
-                Snackbar.make(view, R.string.dev_version_new_version_available, Snackbar.LENGTH_LONG)
-                        .setAction(context.getString(R.string.version_dev_download), v -> {
-                            String devApkLink = (String) context.getText(R.string.dev_link)
-                                    + finalLatestVersion + ".apk";
+                Snackbar.make(activity.findViewById(android.R.id.content), R.string.dev_version_new_version_available,
+                        Snackbar.LENGTH_LONG)
+                        .setAction(activity.getString(R.string.version_dev_download), v -> {
+                            String devApkLink = (String) activity.getText(R.string.dev_link) + latestVersion + ".apk";
                             Uri uriUrl = Uri.parse(devApkLink);
                             Intent intent = new Intent(Intent.ACTION_VIEW, uriUrl);
-                            context.startActivity(intent);
+                            DisplayUtils.startIntentIfAppAvailable(intent, activity, R.string.no_browser_available);
                         }).show();
             }
         } else {
-            Snackbar.make(view, R.string.dev_version_no_new_version_available, Snackbar.LENGTH_LONG).show();
+            DisplayUtils.showSnackMessage(activity, R.string.dev_version_no_new_version_available, Snackbar.LENGTH_LONG);
         }
     }
 }

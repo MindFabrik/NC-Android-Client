@@ -24,6 +24,7 @@ import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.PictureDrawable;
 import android.net.Uri;
+import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -74,35 +75,36 @@ import java.util.List;
 /**
  * Adapter for the activity view
  */
-
 public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private static final int HEADER_TYPE = 100;
-    private static final int ACTIVITY_TYPE = 101;
-    private final ActivityListInterface activityListInterface;
+    protected static final int HEADER_TYPE = 100;
+    protected static final int ACTIVITY_TYPE = 101;
+    protected final ActivityListInterface activityListInterface;
     private final int px;
     private static final String TAG = ActivityListAdapter.class.getSimpleName();
-    private OwnCloudClient mClient;
+    protected OwnCloudClient client;
 
-    private Context context;
+    protected Context context;
     private FileDataStorageManager storageManager;
-    private List<Object> mValues;
+    protected List<Object> values;
+    private boolean isDetailView;
 
     public ActivityListAdapter(Context context, ActivityListInterface activityListInterface,
-                               FileDataStorageManager storageManager) {
-        this.mValues = new ArrayList<>();
+                               FileDataStorageManager storageManager, boolean isDetailView) {
+        this.values = new ArrayList<>();
         this.context = context;
         this.activityListInterface = activityListInterface;
         this.storageManager = storageManager;
         px = getThumbnailDimension();
+        this.isDetailView = isDetailView;
     }
 
     public void setActivityItems(List<Object> activityItems, OwnCloudClient client, boolean clear) {
-        this.mClient = client;
+        this.client = client;
         String sTime = "";
         
         if (clear) {
-            mValues.clear();
+            values.clear();
         }
         
         for (Object o : activityItems) {
@@ -117,18 +119,19 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             }
 
             if (sTime.equalsIgnoreCase(time)) {
-                mValues.add(activity);
+                values.add(activity);
             } else {
                 sTime = time;
-                mValues.add(sTime);
-                mValues.add(activity);
+                values.add(sTime);
+                values.add(activity);
             }
         }
         notifyDataSetChanged();
     }
 
+    @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         if (viewType == ACTIVITY_TYPE) {
             View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.activity_list_item, parent, false);
             return new ActivityViewHolder(v);
@@ -136,15 +139,13 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.activity_list_item_header, parent, false);
             return new ActivityViewHeaderHolder(v);
         }
-
     }
 
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ActivityViewHolder) {
             final ActivityViewHolder activityViewHolder = (ActivityViewHolder) holder;
-            Activity activity = (Activity) mValues.get(position);
+            Activity activity = (Activity) values.get(position);
             if (activity.getDatetime() != null) {
                 activityViewHolder.dateTime.setVisibility(View.VISIBLE);
                 activityViewHolder.dateTime.setText(DateFormat.format("HH:mm", activity.getDatetime().getTime()));
@@ -198,7 +199,7 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
                 for (RichObject richObject : activity.getRichSubjectElement().getRichObjectList()) {
                     if (richObject.getPath() != null) {
-                        ImageView imageView = createThumbnail(richObject);
+                        ImageView imageView = createThumbnail(richObject, isDetailView);
                         activityViewHolder.list.addView(imageView);
                     }
                 }
@@ -209,11 +210,11 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             }
         } else {
             ActivityViewHeaderHolder activityViewHeaderHolder = (ActivityViewHeaderHolder) holder;
-            activityViewHeaderHolder.title.setText((String) mValues.get(position));
+            activityViewHeaderHolder.title.setText((String) values.get(position));
         }
     }
 
-    private ImageView createThumbnail(final RichObject richObject) {
+    private ImageView createThumbnail(final RichObject richObject, boolean isDetailView) {
         String path = FileUtils.PATH_SEPARATOR + richObject.getPath();
         OCFile file = storageManager.getFileByPath(path);
 
@@ -230,15 +231,15 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         ImageView imageView = new ImageView(context);
         imageView.setLayoutParams(params);
         imageView.setOnClickListener(v -> activityListInterface.onActivityClicked(richObject));
-        setBitmap(file, imageView);
+        setBitmap(file, imageView, isDetailView);
 
         return imageView;
     }
 
-    private void setBitmap(OCFile file, ImageView fileIcon) {
+    private void setBitmap(OCFile file, ImageView fileIcon, boolean isDetailView) {
         // No Folder
         if (!file.isFolder()) {
-            if ((MimeTypeUtil.isImage(file) || MimeTypeUtil.isVideo(file))) {
+            if (MimeTypeUtil.isImage(file) || MimeTypeUtil.isVideo(file)) {
                 int placeholder;
 
                 if (MimeTypeUtil.isImage(file)) {
@@ -247,20 +248,29 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                     placeholder = R.drawable.file_movie;
                 }
 
-                String uri = mClient.getBaseUri() + "/index.php/apps/files/api/v1/thumbnail/" + px + "/" + px +
+                String uri = client.getBaseUri() + "/index.php/apps/files/api/v1/thumbnail/" + px + "/" + px +
                         Uri.encode(file.getRemotePath(), "/");
 
                 Glide.with(context).using(new CustomGlideStreamLoader()).load(uri).placeholder(placeholder)
                         .error(placeholder).into(fileIcon); // using custom fetcher
 
             } else {
-                fileIcon.setImageDrawable(MimeTypeUtil.getFileTypeIcon(file.getMimetype(), file.getFileName(), null));
+                if (isDetailView) {
+                    fileIcon.setVisibility(View.GONE);
+                } else {
+                    fileIcon.setImageDrawable(MimeTypeUtil.getFileTypeIcon(file.getMimeType(), file.getFileName(),
+                            context));
+                }
             }
         } else {
             // Folder
-            fileIcon.setImageDrawable(
-                    MimeTypeUtil.getFolderTypeIcon(file.isSharedWithMe() || file.isSharedWithSharee(),
-                            file.isSharedViaLink(), file.isEncrypted(), file.getMountType()));
+            if (isDetailView) {
+                fileIcon.setVisibility(View.GONE);
+            } else {
+                fileIcon.setImageDrawable(
+                        MimeTypeUtil.getFolderTypeIcon(file.isSharedWithMe() || file.isSharedWithSharee(),
+                                file.isSharedViaLink(), file.isEncrypted(), file.getMountType(), context));
+            }
         }
     }
 
@@ -289,10 +299,10 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         String text = richElement.getRichSubject();
         SpannableStringBuilder ssb = new SpannableStringBuilder(text);
 
-        int idx1 = text.indexOf("{");
+        int idx1 = text.indexOf('{');
         int idx2;
         while (idx1 != -1) {
-            idx2 = text.indexOf("}", idx1) + 1;
+            idx2 = text.indexOf('}', idx1) + 1;
             final String clickString = text.substring(idx1 + 1, idx2 - 1);
             final RichObject richObject = searchObjectByName(richElement.getRichObjectList(), clickString);
             if (richObject != null) {
@@ -314,16 +324,17 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                 ssb.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), idx1, idx2, 0);
                 ssb.setSpan(new ForegroundColorSpan(Color.BLACK), idx1, idx2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
-            idx1 = text.indexOf("{", idx2);
+            idx1 = text.indexOf('{', idx2);
         }
 
         return ssb;
     }
 
-    private RichObject searchObjectByName(ArrayList<RichObject> richObjectList, String name) {
+    private RichObject searchObjectByName(List<RichObject> richObjectList, String name) {
         for (RichObject richObject : richObjectList) {
-            if (richObject.getTag().equalsIgnoreCase(name))
+            if (richObject.getTag().equalsIgnoreCase(name)) {
                 return richObject;
+            }
         }
         return null;
     }
@@ -331,15 +342,16 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
     @Override
     public int getItemViewType(int position) {
-        if (mValues.get(position) instanceof Activity)
+        if (values.get(position) instanceof Activity) {
             return ACTIVITY_TYPE;
-        else
+        } else {
             return HEADER_TYPE;
+        }
     }
 
     @Override
     public int getItemCount() {
-        return mValues.size();
+        return values.size();
     }
 
     /**
@@ -354,7 +366,7 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         return d.intValue();
     }
 
-    private CharSequence getHeaderDateString(Context context, long modificationTimestamp) {
+    protected CharSequence getHeaderDateString(Context context, long modificationTimestamp) {
         if ((System.currentTimeMillis() - modificationTimestamp) < DateUtils.WEEK_IN_MILLIS) {
             return DisplayUtils.getRelativeDateTimeString(context, modificationTimestamp, DateUtils.DAY_IN_MILLIS,
                     DateUtils.WEEK_IN_MILLIS, 0);
@@ -363,7 +375,7 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         }
     }
 
-    private class ActivityViewHolder extends RecyclerView.ViewHolder {
+    protected class ActivityViewHolder extends RecyclerView.ViewHolder {
 
         private final ImageView activityIcon;
         private final TextView subject;
@@ -371,7 +383,7 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         private final TextView dateTime;
         private final GridLayout list;
 
-        private ActivityViewHolder(View itemView) {
+        protected ActivityViewHolder(View itemView) {
             super(itemView);
             activityIcon = itemView.findViewById(R.id.activity_icon);
             subject = itemView.findViewById(R.id.activity_subject);
@@ -381,15 +393,14 @@ public class ActivityListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         }
     }
 
-    private class ActivityViewHeaderHolder extends RecyclerView.ViewHolder {
+    protected class ActivityViewHeaderHolder extends RecyclerView.ViewHolder {
 
         private final TextView title;
 
-        private ActivityViewHeaderHolder(View itemView) {
+        protected ActivityViewHeaderHolder(View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.title_header);
 
         }
     }
-
 }

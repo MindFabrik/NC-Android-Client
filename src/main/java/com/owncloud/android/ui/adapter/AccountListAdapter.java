@@ -1,4 +1,4 @@
-/**
+/*
  * ownCloud Android client application
  *
  * @author Andy Scherzinger
@@ -62,8 +62,9 @@ public class AccountListAdapter extends ArrayAdapter<AccountListItem> implements
         this.mTintedCheck = tintedCheck;
     }
 
+    @NonNull
     @Override
-    public View getView(final int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View convertView, @NonNull ViewGroup parent) {
         AccountViewHolderItem viewHolder;
         View view = convertView;
 
@@ -72,11 +73,11 @@ public class AccountListAdapter extends ArrayAdapter<AccountListItem> implements
             view = inflater.inflate(R.layout.account_item, parent, false);
 
             viewHolder = new AccountViewHolderItem();
-            viewHolder.imageViewItem = (ImageView) view.findViewById(R.id.user_icon);
-            viewHolder.checkViewItem = (ImageView) view.findViewById(R.id.ticker);
+            viewHolder.imageViewItem = view.findViewById(R.id.user_icon);
+            viewHolder.checkViewItem = view.findViewById(R.id.ticker);
             viewHolder.checkViewItem.setImageDrawable(mTintedCheck);
-            viewHolder.usernameViewItem = (TextView) view.findViewById(R.id.user_name);
-            viewHolder.accountViewItem = (TextView) view.findViewById(R.id.account);
+            viewHolder.usernameViewItem = view.findViewById(R.id.user_name);
+            viewHolder.accountViewItem = view.findViewById(R.id.account);
 
             view.setTag(viewHolder);
         } else {
@@ -119,19 +120,22 @@ public class AccountListAdapter extends ArrayAdapter<AccountListItem> implements
         LayoutInflater inflater = mContext.getLayoutInflater();
         View actionView = inflater.inflate(R.layout.account_action, parent, false);
 
-        TextView userName = (TextView) actionView.findViewById(R.id.user_name);
+        TextView userName = actionView.findViewById(R.id.user_name);
         userName.setText(R.string.prefs_add_account);
-        userName.setTextColor(ThemeUtils.primaryColor());
+        userName.setTextColor(ThemeUtils.primaryColor(getContext(), true));
 
         ((ImageView) actionView.findViewById(R.id.user_icon)).setImageResource(R.drawable.ic_account_plus);
 
         // bind action listener
-        actionView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mListener.createAccount();
-            }
-        });
+        boolean isProviderOrOwnInstallationVisible = mContext.getResources()
+                .getBoolean(R.bool.show_provider_or_own_installation);
+
+        if (isProviderOrOwnInstallationVisible) {
+            actionView.setOnClickListener(v -> mListener.showFirstRunActivity());
+        } else {
+            actionView.setOnClickListener(v -> mListener.createAccount());
+        }
+        
         return actionView;
     }
 
@@ -141,7 +145,8 @@ public class AccountListAdapter extends ArrayAdapter<AccountListItem> implements
     }
 
     private void setCurrentlyActiveState(AccountViewHolderItem viewHolder, Account account) {
-        if (AccountUtils.getCurrentOwnCloudAccount(getContext()).name.equals(account.name)) {
+        Account currentAccount = AccountUtils.getCurrentOwnCloudAccount(getContext());
+        if (currentAccount != null && currentAccount.name.equals(account.name)) {
             viewHolder.checkViewItem.setVisibility(View.VISIBLE);
         } else {
             viewHolder.checkViewItem.setVisibility(View.INVISIBLE);
@@ -152,8 +157,8 @@ public class AccountListAdapter extends ArrayAdapter<AccountListItem> implements
         try {
             View viewItem = viewHolder.imageViewItem;
             viewItem.setTag(account.name);
-            DisplayUtils.setAvatar(account, this, mAccountAvatarRadiusDimension, mContext.getResources(),
-                    mContext.getStorageManager(), viewItem);
+            DisplayUtils.setAvatar(account, this, mAccountAvatarRadiusDimension, mContext.getResources(), viewItem,
+                    mContext);
         } catch (Exception e) {
             Log_OC.e(TAG, "Error calculating RGB value for account list item.", e);
             // use user icon as a fallback
@@ -186,6 +191,8 @@ public class AccountListAdapter extends ArrayAdapter<AccountListItem> implements
      * Listener interface for Activities using the {@link AccountListAdapter}
      */
     public interface AccountListAdapterListener {
+
+        void showFirstRunActivity();
 
         void createAccount();
     }

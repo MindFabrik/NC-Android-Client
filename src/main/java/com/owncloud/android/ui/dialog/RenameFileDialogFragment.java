@@ -30,10 +30,12 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager.LayoutParams;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -77,7 +79,7 @@ public class RenameFileDialogFragment
     public void onStart() {
         super.onStart();
 
-        int color = ThemeUtils.primaryAccentColor();
+        int color = ThemeUtils.primaryAccentColor(getContext());
 
         AlertDialog alertDialog = (AlertDialog) getDialog();
 
@@ -85,39 +87,45 @@ public class RenameFileDialogFragment
         alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(color);
     }
 
+    @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        int accentColor = ThemeUtils.primaryAccentColor();
+        int accentColor = ThemeUtils.primaryAccentColor(getContext());
         mTargetFile = getArguments().getParcelable(ARG_TARGET_FILE);
 
         // Inflate the layout for the dialog
         LayoutInflater inflater = getActivity().getLayoutInflater();
         View v = inflater.inflate(R.layout.edit_box_dialog, null);
-        
+
         // Setup layout 
         String currentName = mTargetFile.getFileName();
-        EditText inputText = ((EditText)v.findViewById(R.id.user_input));
+        EditText inputText = v.findViewById(R.id.user_input);
         inputText.setText(currentName);
         int selectionStart = 0;
         int extensionStart = mTargetFile.isFolder() ? -1 : currentName.lastIndexOf('.');
-        int selectionEnd = (extensionStart >= 0) ? extensionStart : currentName.length();
+        int selectionEnd = extensionStart >= 0 ? extensionStart : currentName.length();
         if (selectionStart >= 0 && selectionEnd >= 0) {
             inputText.setSelection(
-                    Math.min(selectionStart, selectionEnd), 
+                    Math.min(selectionStart, selectionEnd),
                     Math.max(selectionStart, selectionEnd));
         }
         inputText.requestFocus();
         inputText.getBackground().setColorFilter(accentColor, PorterDuff.Mode.SRC_ATOP);
-        
+
         // Build the dialog  
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setView(v)
-               .setPositiveButton(R.string.common_ok, this)
-               .setNegativeButton(R.string.common_cancel, this)
+                .setPositiveButton(R.string.file_rename, this)
+                .setNegativeButton(R.string.common_cancel, this)
                 .setTitle(ThemeUtils.getColoredTitle(getResources().getString(R.string.rename_dialog_title),
                         accentColor));
         Dialog d = builder.create();
-        d.getWindow().setSoftInputMode(LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+
+        Window window = d.getWindow();
+        if (window != null) {
+            window.setSoftInputMode(LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        }
+        
         return d;
     }    
 
@@ -134,23 +142,13 @@ public class RenameFileDialogFragment
                 return;
             }
 
-            boolean serverWithForbiddenChars = ((ComponentsGetter)getActivity()).
-                    getFileOperationsHelper().isVersionWithForbiddenCharacters();
-
-            if (!FileUtils.isValidName(newFileName, serverWithForbiddenChars)) {
-
-                if (serverWithForbiddenChars) {
-                    DisplayUtils.showSnackMessage(getActivity(), R.string.filename_forbidden_charaters_from_server);
-                } else {
-                    DisplayUtils.showSnackMessage(getActivity(), R.string.filename_forbidden_characters);
-                }
-
+            if (!FileUtils.isValidName(newFileName)) {
+                DisplayUtils.showSnackMessage(getActivity(), R.string.filename_forbidden_charaters_from_server);
+                    
                 return;
             }
 
-            ((ComponentsGetter)getActivity()).getFileOperationsHelper().
-                    renameFile(mTargetFile, newFileName);
-
+            ((ComponentsGetter) getActivity()).getFileOperationsHelper().renameFile(mTargetFile, newFileName);
         }
     }
 }

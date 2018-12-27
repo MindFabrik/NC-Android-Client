@@ -66,7 +66,6 @@ import com.owncloud.android.lib.common.operations.RemoteOperationResult;
 import com.owncloud.android.lib.common.operations.RemoteOperationResult.ResultCode;
 import com.owncloud.android.lib.common.utils.Log_OC;
 import com.owncloud.android.lib.resources.files.FileUtils;
-import com.owncloud.android.lib.resources.status.OwnCloudVersion;
 import com.owncloud.android.operations.UploadFileOperation;
 import com.owncloud.android.ui.activity.FileActivity;
 import com.owncloud.android.ui.activity.UploadListActivity;
@@ -170,18 +169,18 @@ public class FileUploader extends Service
     private Looper mServiceLooper;
     private ServiceHandler mServiceHandler;
     private IBinder mBinder;
-    private OwnCloudClient mUploadClient = null;
-    private Account mCurrentAccount = null;
+    private OwnCloudClient mUploadClient;
+    private Account mCurrentAccount;
     private FileDataStorageManager mStorageManager;
     //since there can be only one instance of an Android service, there also just one db connection.
-    private UploadsStorageManager mUploadsStorageManager = null;
+    private UploadsStorageManager mUploadsStorageManager;
 
-    private IndexedForest<UploadFileOperation> mPendingUploads = new IndexedForest<UploadFileOperation>();
+    private IndexedForest<UploadFileOperation> mPendingUploads = new IndexedForest<>();
 
     /**
      * {@link UploadFileOperation} object of ongoing upload. Can be null. Note: There can only be one concurrent upload!
      */
-    private UploadFileOperation mCurrentUpload = null;
+    private UploadFileOperation mCurrentUpload;
 
     private NotificationManager mNotificationManager;
     private NotificationCompat.Builder mNotificationBuilder;
@@ -400,11 +399,10 @@ public class FileUploader extends Service
             boolean isPowerSaving = PowerUtils.isPowerSaveMode(context);
 
             for ( OCUpload failedUpload: failedUploads) {
-                accountMatch = (account == null || account.name.equals(failedUpload.getAccountName()));
-                resultMatch = ((uploadResult == null || uploadResult.equals(failedUpload.getLastResult())));
+                accountMatch = account == null || account.name.equals(failedUpload.getAccountName());
+                resultMatch = uploadResult == null || uploadResult.equals(failedUpload.getLastResult());
                 if (accountMatch && resultMatch) {
-                    if (currentAccount == null ||
-                            !currentAccount.name.equals(failedUpload.getAccountName())) {
+                    if (currentAccount == null || !currentAccount.name.equals(failedUpload.getAccountName())) {
                         currentAccount = failedUpload.getAccount(context);
                     }
 
@@ -463,13 +461,18 @@ public class FileUploader extends Service
 
         mUploadsStorageManager = new UploadsStorageManager(getContentResolver(), getApplicationContext());
 
-        mNotification = new NotificationCompat.Builder(this).setContentTitle(getApplicationContext().
-                getResources().getString(R.string.app_name))
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this).setContentTitle(
+                getApplicationContext().getResources().getString(R.string.app_name))
                 .setContentText(getApplicationContext().getResources().getString(R.string.foreground_service_upload))
                 .setSmallIcon(R.drawable.notification_icon)
                 .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.notification_icon))
-                .setColor(ThemeUtils.primaryColor())
-                .build();
+                .setColor(ThemeUtils.primaryColor(getApplicationContext(), true));
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            builder.setChannelId(NotificationUtils.NOTIFICATION_CHANNEL_UPLOAD);
+        }
+
+        mNotification = builder.build();
 
         int failedCounter = mUploadsStorageManager.failInProgressUploads(
             UploadResult.SERVICE_INTERRUPTED    // Add UploadResult.KILLED?
@@ -528,9 +531,6 @@ public class FileUploader extends Service
             return Service.START_NOT_STICKY;
         }
 
-        boolean retry = intent.getBooleanExtra(KEY_RETRY, false);
-        AbstractList<String> requestedUploads = new Vector<String>();
-
         if (!intent.hasExtra(KEY_ACCOUNT)) {
             Log_OC.e(TAG, "Not enough information provided in intent");
             return Service.START_NOT_STICKY;
@@ -540,9 +540,9 @@ public class FileUploader extends Service
         if (!AccountUtils.exists(account, getApplicationContext())) {
             return Service.START_NOT_STICKY;
         }
-        OwnCloudVersion ocv = AccountUtils.getServerVersion(account);
 
-        boolean chunked = ocv.isChunkedUploadSupported();
+        boolean retry = intent.getBooleanExtra(KEY_RETRY, false);
+        AbstractList<String> requestedUploads = new Vector<>();
 
         boolean onWifiOnly = intent.getBooleanExtra(KEY_WHILE_ON_WIFI_ONLY, false);
         boolean whileChargingOnly = intent.getBooleanExtra(KEY_WHILE_CHARGING_ONLY, false);
@@ -571,12 +571,6 @@ public class FileUploader extends Service
                 mimeTypes = intent.getStringArrayExtra(KEY_MIME_TYPE);
             }
 
-            boolean forceOverwrite = intent.getBooleanExtra(KEY_FORCE_OVERWRITE, false);
-            int localAction = intent.getIntExtra(KEY_LOCAL_BEHAVIOUR, LOCAL_BEHAVIOUR_FORGET);
-
-            boolean isCreateRemoteFolder = intent.getBooleanExtra(KEY_CREATE_REMOTE_FOLDER, false);
-            int createdBy = intent.getIntExtra(KEY_CREATED_BY, UploadFileOperation.CREATED_BY_USER);
-
             if (intent.hasExtra(KEY_FILE) && files == null) {
                 Log_OC.e(TAG, "Incorrect array for OCFiles provided in upload intent");
                 return Service.START_NOT_STICKY;
@@ -600,7 +594,7 @@ public class FileUploader extends Service
                     files[i] = UploadFileOperation.obtainNewOCFileToUpload(
                             remotePaths[i],
                             localPaths[i],
-                            ((mimeTypes != null) ? mimeTypes[i] : null)
+                            mimeTypes != null ? mimeTypes[i] : null
                     );
                     if (files[i] == null) {
                         Log_OC.e(TAG, "obtainNewOCFileToUpload() returned null for remotePaths[i]:" + remotePaths[i]
@@ -611,28 +605,30 @@ public class FileUploader extends Service
             }
             // at this point variable "OCFile[] files" is loaded correctly.
 
-            String uploadKey = null;
-            UploadFileOperation newUpload = null;
+            boolean forceOverwrite = intent.getBooleanExtra(KEY_FORCE_OVERWRITE, false);
+            int localAction = intent.getIntExtra(KEY_LOCAL_BEHAVIOUR, LOCAL_BEHAVIOUR_FORGET);
+            boolean isCreateRemoteFolder = intent.getBooleanExtra(KEY_CREATE_REMOTE_FOLDER, false);
+            int createdBy = intent.getIntExtra(KEY_CREATED_BY, UploadFileOperation.CREATED_BY_USER);
+            String uploadKey;
+            UploadFileOperation newUpload;
             try {
-                for (int i = 0; i < files.length; i++) {
+                for (OCFile file : files) {
 
-                    OCUpload ocUpload = new OCUpload(files[i], account);
-                    ocUpload.setFileSize(files[i].getFileLength());
+                    OCUpload ocUpload = new OCUpload(file, account);
+                    ocUpload.setFileSize(file.getFileLength());
                     ocUpload.setForceOverwrite(forceOverwrite);
                     ocUpload.setCreateRemoteFolder(isCreateRemoteFolder);
                     ocUpload.setCreatedBy(createdBy);
                     ocUpload.setLocalAction(localAction);
                     ocUpload.setUseWifiOnly(onWifiOnly);
                     ocUpload.setWhileChargingOnly(whileChargingOnly);
-
                     ocUpload.setUploadStatus(UploadStatus.UPLOAD_IN_PROGRESS);
 
 
                     newUpload = new UploadFileOperation(
                             account,
-                            files[i],
+                            file,
                             ocUpload,
-                            chunked,
                             forceOverwrite,
                             localAction,
                             this,
@@ -650,7 +646,7 @@ public class FileUploader extends Service
 
                     Pair<String, String> putResult = mPendingUploads.putIfAbsent(
                             account.name,
-                            files[i].getRemotePath(),
+                            file.getRemotePath(),
                             newUpload
                     );
                     if (putResult != null) {
@@ -691,7 +687,6 @@ public class FileUploader extends Service
                     account,
                     null,
                     upload,
-                    chunked,
                     upload.isForceOverwrite(),  // TODO should be read from DB?
                     upload.getLocalAction(),    // TODO should be read from DB?
                     this,
@@ -738,7 +733,7 @@ public class FileUploader extends Service
      * uploads.
      */
     @Override
-    public IBinder onBind(Intent arg0) {
+    public IBinder onBind(Intent intent) {
         return mBinder;
     }
 
@@ -867,17 +862,17 @@ public class FileUploader extends Service
             if (account == null || file == null) {
                 return false;
             }
-            return (mPendingUploads.contains(account.name, file.getRemotePath()));
+            return mPendingUploads.contains(account.name, file.getRemotePath());
         }
 
         public boolean isUploadingNow(OCUpload upload) {
-            return (
-                upload != null  &&
-                mCurrentAccount != null &&
-                mCurrentUpload != null &&
-                upload.getAccountName().equals(mCurrentAccount.name) &&
-                upload.getRemotePath().equals(mCurrentUpload.getRemotePath())
-            );
+            return
+                    upload != null &&
+                            mCurrentAccount != null &&
+                            mCurrentUpload != null &&
+                            upload.getAccountName().equals(mCurrentAccount.name) &&
+                            upload.getRemotePath().equals(mCurrentUpload.getRemotePath())
+            ;
         }
 
         /**
@@ -966,15 +961,15 @@ public class FileUploader extends Service
                         totalToTransfer, fileName);
 
                 if (MainApp.getAppContext() != null) {
-                    if (mCurrentUpload.getIsWifiRequired() && !Device.getNetworkType(MainApp.getAppContext()).
+                    if (mCurrentUpload.isWifiRequired() && !Device.getNetworkType(MainApp.getAppContext()).
                             equals(JobRequest.NetworkType.UNMETERED)) {
                         cancel(mCurrentUpload.getAccount().name, mCurrentUpload.getFile().getRemotePath()
                                 , ResultCode.DELAYED_FOR_WIFI);
-                    } else if (mCurrentUpload.getIsChargingRequired() &&
+                    } else if (mCurrentUpload.isChargingRequired() &&
                             !Device.getBatteryStatus(MainApp.getAppContext()).isCharging()) {
                         cancel(mCurrentUpload.getAccount().name, mCurrentUpload.getFile().getRemotePath()
                                 , ResultCode.DELAYED_FOR_CHARGING);
-                    } else if (!mCurrentUpload.getIsIgnoringPowerSaveMode() &&
+                    } else if (!mCurrentUpload.isIgnoringPowerSaveMode() &&
                             PowerUtils.isPowerSaveMode(MainApp.getAppContext())) {
                         cancel(mCurrentUpload.getAccount().name, mCurrentUpload.getFile().getRemotePath()
                                 , ResultCode.DELAYED_IN_POWER_SAVE_MODE);
@@ -1155,7 +1150,7 @@ public class FileUploader extends Service
                         String.format(getString(R.string.uploader_upload_in_progress_content), 0, upload.getFileName())
                 );
 
-        if ((android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             mNotificationBuilder.setChannelId(NotificationUtils.NOTIFICATION_CHANNEL_UPLOAD);
         }
 
@@ -1219,15 +1214,14 @@ public class FileUploader extends Service
             !uploadResult.getCode().equals(ResultCode.DELAYED_IN_POWER_SAVE_MODE) &&
             !uploadResult.getCode().equals(ResultCode.LOCK_FAILED)    ) {
 
-            int tickerId = (uploadResult.isSuccess()) ? R.string.uploader_upload_succeeded_ticker :
+            int tickerId = uploadResult.isSuccess() ? R.string.uploader_upload_succeeded_ticker :
                     R.string.uploader_upload_failed_ticker;
 
             String content;
 
             // check credentials error
-            boolean needsToUpdateCredentials = (ResultCode.UNAUTHORIZED.equals(uploadResult.getCode()));
-            tickerId = (needsToUpdateCredentials) ?
-                    R.string.uploader_upload_failed_credentials_error : tickerId;
+            boolean needsToUpdateCredentials = ResultCode.UNAUTHORIZED.equals(uploadResult.getCode());
+            tickerId = needsToUpdateCredentials ? R.string.uploader_upload_failed_credentials_error : tickerId;
 
             mNotificationBuilder
                     .setTicker(getString(tickerId))

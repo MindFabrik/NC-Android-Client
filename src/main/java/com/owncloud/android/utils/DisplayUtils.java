@@ -25,19 +25,17 @@
 package com.owncloud.android.utils;
 
 import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.PictureDrawable;
 import android.net.Uri;
-import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
@@ -49,6 +47,7 @@ import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.text.style.StyleSpan;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -66,7 +65,6 @@ import com.owncloud.android.MainApp;
 import com.owncloud.android.R;
 import com.owncloud.android.authentication.AccountUtils;
 import com.owncloud.android.datamodel.ArbitraryDataProvider;
-import com.owncloud.android.datamodel.FileDataStorageManager;
 import com.owncloud.android.datamodel.OCFile;
 import com.owncloud.android.datamodel.ThumbnailsCacheManager;
 import com.owncloud.android.lib.common.OwnCloudAccount;
@@ -103,18 +101,21 @@ import java.util.Set;
 /**
  * A helper class for UI/display related operations.
  */
-public class DisplayUtils {
+public final class DisplayUtils {
     private static final String TAG = DisplayUtils.class.getSimpleName();
 
     private static final String[] sizeSuffixes = {"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
     private static final int[] sizeScales = {0, 0, 1, 1, 1, 2, 2, 2, 2};
-    private static final int RELATIVE_THRESHOLD_WARNING = 90;
-    private static final int RELATIVE_THRESHOLD_CRITICAL = 95;
+    private static final int RELATIVE_THRESHOLD_WARNING = 80;
     private static final String MIME_TYPE_UNKNOWN = "Unknown type";
 
-    private static final String HTTP_PROTOCOLL = "http://";
-    private static final String HTTPS_PROTOCOLL = "https://";
+    private static final String HTTP_PROTOCOL = "http://";
+    private static final String HTTPS_PROTOCOL = "https://";
     private static final String TWITTER_HANDLE_PREFIX = "@";
+    private static final int MIMETYPE_PARTS_COUNT = 2;
+    private static final int BYTE_SIZE_DIVIDER = 1024;
+    private static final double BYTE_SIZE_DIVIDER_DOUBLE = 1024.0;
+    private static final int DATE_TIME_PARTS_SIZE = 2;
 
     private static Map<String, String> mimeType2HumanReadable;
 
@@ -131,6 +132,10 @@ public class DisplayUtils {
         // music
         mimeType2HumanReadable.put("audio/mpeg", "MP3 music file");
         mimeType2HumanReadable.put("application/ogg", "OGG music file");
+    }
+
+    private DisplayUtils() {
+        // utility class -> private constructor
     }
 
     /**
@@ -150,8 +155,8 @@ public class DisplayUtils {
         } else {
             double result = bytes;
             int suffixIndex = 0;
-            while (result > 1024 && suffixIndex < sizeSuffixes.length) {
-                result /= 1024.;
+            while (result > BYTE_SIZE_DIVIDER && suffixIndex < sizeSuffixes.length) {
+                result /= BYTE_SIZE_DIVIDER_DOUBLE;
                 suffixIndex++;
             }
 
@@ -171,7 +176,7 @@ public class DisplayUtils {
         if (mimeType2HumanReadable.containsKey(mimetype)) {
             return mimeType2HumanReadable.get(mimetype);
         }
-        if (mimetype.split("/").length >= 2) {
+        if (mimetype.split("/").length >= MIMETYPE_PARTS_COUNT) {
             return mimetype.split("/")[1].toUpperCase(Locale.getDefault()) + " file";
         }
         return MIME_TYPE_UNKNOWN;
@@ -200,12 +205,12 @@ public class DisplayUtils {
             return "";
         }
 
-        if (url.length() >= 7 && url.substring(0, 7).equalsIgnoreCase(HTTP_PROTOCOLL)) {
-            return url.substring(HTTP_PROTOCOLL.length()).trim();
+        if (url.length() >= 7 && HTTP_PROTOCOL.equalsIgnoreCase(url.substring(0, 7))) {
+            return url.substring(HTTP_PROTOCOL.length()).trim();
         }
 
-        if (url.length() >= 8 && url.substring(0, 8).equalsIgnoreCase(HTTPS_PROTOCOLL)) {
-            return url.substring(HTTPS_PROTOCOLL.length()).trim();
+        if (url.length() >= 8 && HTTPS_PROTOCOL.equalsIgnoreCase(url.substring(0, 8))) {
+            return url.substring(HTTPS_PROTOCOL.length()).trim();
         }
 
         return url.trim();
@@ -242,12 +247,11 @@ public class DisplayUtils {
      * @param toASCII if true converts from Unicode to ASCII, if false converts from ASCII to Unicode
      * @return the URL containing the converted domain name
      */
-    @TargetApi(Build.VERSION_CODES.GINGERBREAD)
     public static String convertIdn(String url, boolean toASCII) {
 
         String urlNoDots = url;
         String dots = "";
-        while (urlNoDots.startsWith(".")) {
+        while (urlNoDots.length() > 0 && urlNoDots.charAt(0) == '.') {
             urlNoDots = url.substring(1);
             dots = dots + ".";
         }
@@ -262,10 +266,10 @@ public class DisplayUtils {
 
         int hostEnd = url.substring(hostStart).indexOf("/");
         // Handle URL which doesn't have a path (path is implicitly '/')
-        hostEnd = (hostEnd == -1 ? urlNoDots.length() : hostStart + hostEnd);
+        hostEnd = hostEnd == -1 ? urlNoDots.length() : hostStart + hostEnd;
 
         String host = urlNoDots.substring(hostStart, hostEnd);
-        host = (toASCII ? IDN.toASCII(host) : IDN.toUnicode(host));
+        host = toASCII ? IDN.toASCII(host) : IDN.toUnicode(host);
 
         return dots + urlNoDots.substring(0, hostStart) + host + urlNoDots.substring(hostEnd);
     }
@@ -309,7 +313,7 @@ public class DisplayUtils {
      * calculates the relative time string based on the given modification timestamp.
      *
      * @param context the app's context
-     * @param modificationTimestamp the UNIX timestamp of the file modification time.
+     * @param modificationTimestamp the UNIX timestamp of the file modification time in milliseconds.
      * @return a relative time string
      */
     public static CharSequence getRelativeTimestamp(Context context, long modificationTimestamp) {
@@ -319,8 +323,7 @@ public class DisplayUtils {
 
 
     /**
-     * determines the info level color based on certain thresholds
-     * {@link #RELATIVE_THRESHOLD_WARNING} and {@link #RELATIVE_THRESHOLD_CRITICAL}.
+     * determines the info level color based on {@link #RELATIVE_THRESHOLD_WARNING}.
      *
      * @param context  the app's context
      * @param relative relative value for which the info level color should be looked up
@@ -328,16 +331,9 @@ public class DisplayUtils {
      */
     public static int getRelativeInfoColor(Context context, int relative) {
         if (relative < RELATIVE_THRESHOLD_WARNING) {
-            if (ThemeUtils.colorToHexString(ThemeUtils.primaryColor()).equalsIgnoreCase(
-                    ThemeUtils.colorToHexString(context.getResources().getColor(R.color.primary)))) {
-                return context.getResources().getColor(R.color.infolevel_info);
-            } else {
-                return Color.GRAY;
-            }
-        } else if (relative >= RELATIVE_THRESHOLD_WARNING && relative < RELATIVE_THRESHOLD_CRITICAL) {
-            return context.getResources().getColor(R.color.infolevel_warning);
+            return ThemeUtils.primaryColor(context, true);
         } else {
-            return context.getResources().getColor(R.color.infolevel_critical);
+            return context.getResources().getColor(R.color.infolevel_warning);
         }
     }
 
@@ -358,7 +354,7 @@ public class DisplayUtils {
         }
 
         String[] parts = dateString.toString().split(",");
-        if (parts.length == 2) {
+        if (parts.length == DATE_TIME_PARTS_SIZE) {
             if (parts[1].contains(":") && !parts[0].contains(":")) {
                 return parts[0];
             } else if (parts[0].contains(":") && !parts[1].contains(":")) {
@@ -433,50 +429,68 @@ public class DisplayUtils {
     }
 
     /**
-     * fetches and sets the avatar of the current account in the drawer in case the drawer is available.
+     * fetches and sets the avatar of the given account in the passed callContext
      *
-     * @param account        the account to be set in the drawer
+     * @param account        the account to be used to connect to server
      * @param avatarRadius   the avatar radius
      * @param resources      reference for density information
-     * @param storageManager reference for caching purposes
+     * @param callContext    which context is called to set the generated avatar
      */
-    public static void setAvatar(Account account, AvatarGenerationListener listener, float avatarRadius,
-                                 Resources resources, FileDataStorageManager storageManager, Object callContext) {
-        if (account != null) {
-            if (callContext instanceof View) {
-                ((View) callContext).setContentDescription(account.name);
+    public static void setAvatar(@NonNull Account account, AvatarGenerationListener listener,
+                                 float avatarRadius, Resources resources, Object callContext, Context context) {
+
+        AccountManager accountManager = AccountManager.get(context);
+        String userId = accountManager.getUserData(account,
+                com.owncloud.android.lib.common.accounts.AccountUtils.Constants.KEY_USER_ID);
+
+        setAvatar(account, userId, listener, avatarRadius, resources, callContext, context);
+    }
+
+    /**
+     * fetches and sets the avatar of the given account in the passed callContext
+     *
+     * @param account        the account to be used to connect to server
+     * @param userId         the userId which avatar should be set
+     * @param avatarRadius   the avatar radius
+     * @param resources      reference for density information
+     * @param callContext    which context is called to set the generated avatar
+     */
+    public static void setAvatar(@NonNull Account account, @NonNull String userId, AvatarGenerationListener listener,
+                                 float avatarRadius, Resources resources, Object callContext, Context context) {
+        if (callContext instanceof View) {
+            ((View) callContext).setContentDescription(account.name);
+        }
+
+        ArbitraryDataProvider arbitraryDataProvider = new ArbitraryDataProvider(context.getContentResolver());
+
+        String serverName = account.name.substring(account.name.lastIndexOf('@') + 1, account.name.length());
+        String eTag = arbitraryDataProvider.getValue(userId + "@" + serverName, ThumbnailsCacheManager.AVATAR);
+        String avatarKey = "a_" + userId + "_" + serverName + "_" + eTag;
+
+        // first show old one
+        Drawable avatar = BitmapUtils.bitmapToCircularBitmapDrawable(resources,
+                ThumbnailsCacheManager.getBitmapFromDiskCache(avatarKey));
+
+        // if no one exists, show colored icon with initial char
+        if (avatar == null) {
+            try {
+                avatar = TextDrawable.createAvatarByUserId(userId, avatarRadius);
+            } catch (Exception e) {
+                Log_OC.e(TAG, "Error calculating RGB value for active account icon.", e);
+                avatar = resources.getDrawable(R.drawable.account_circle_white);
             }
+        }
 
-            ArbitraryDataProvider arbitraryDataProvider = new ArbitraryDataProvider(
-                    MainApp.getAppContext().getContentResolver());
+        // check for new avatar, eTag is compared, so only new one is downloaded
+        if (ThumbnailsCacheManager.cancelPotentialAvatarWork(userId, callContext)) {
+            final ThumbnailsCacheManager.AvatarGenerationTask task =
+                    new ThumbnailsCacheManager.AvatarGenerationTask(listener, callContext, account, resources,
+                            avatarRadius, userId, serverName, context);
 
-            String eTag = arbitraryDataProvider.getValue(account, ThumbnailsCacheManager.AVATAR);
-
-            // first show old one
-            Drawable avatar = BitmapUtils.bitmapToCircularBitmapDrawable(resources,
-                    ThumbnailsCacheManager.getBitmapFromDiskCache("a_" + account.name + "_" + eTag));
-
-            // if no one exists, show colored icon with initial char
-            if (avatar == null) {
-                try {
-                    avatar = TextDrawable.createAvatar(account.name, avatarRadius);
-                } catch (Exception e) {
-                    Log_OC.e(TAG, "Error calculating RGB value for active account icon.", e);
-                    avatar = resources.getDrawable(R.drawable.ic_account_circle);
-                }
-            }
-
-            // check for new avatar, eTag is compared, so only new one is downloaded
-            if (ThumbnailsCacheManager.cancelPotentialAvatarWork(account.name, callContext)) {
-                final ThumbnailsCacheManager.AvatarGenerationTask task =
-                        new ThumbnailsCacheManager.AvatarGenerationTask(listener, callContext, storageManager,
-                                account, resources, avatarRadius);
-
-                final ThumbnailsCacheManager.AsyncAvatarDrawable asyncDrawable =
-                        new ThumbnailsCacheManager.AsyncAvatarDrawable(resources, avatar, task);
-                listener.avatarGenerated(asyncDrawable, callContext);
-                task.execute(account.name);
-            }
+            final ThumbnailsCacheManager.AsyncAvatarDrawable asyncDrawable =
+                    new ThumbnailsCacheManager.AsyncAvatarDrawable(resources, avatar, task);
+            listener.avatarGenerated(asyncDrawable, callContext);
+            task.execute(userId);
         }
     }
 
@@ -644,45 +658,86 @@ public class DisplayUtils {
     }
 
     /**
-     * Show a temporary message in a Snackbar bound to the content view.
+     * Show a temporary message in a {@link Snackbar} bound to the content view.
      *
-     * @param activity Activity to which's content view the Snackbar is bound.
-     * @param messageResource Message to show.
+     * @param activity        The {@link Activity} to which's content view the {@link Snackbar} is bound.
+     * @param messageResource The resource id of the string resource to use. Can be formatted text.
      */
     public static void showSnackMessage(Activity activity, @StringRes int messageResource) {
-        Snackbar.make(activity.findViewById(android.R.id.content), messageResource, Snackbar.LENGTH_LONG).show();
+        showSnackMessage(activity.findViewById(android.R.id.content), messageResource);
     }
 
     /**
-     * Show a temporary message in a Snackbar bound to the content view.
+     * Show a temporary message in a {@link Snackbar} bound to the content view.
      *
-     * @param activity        Activity to which's content view the Snackbar is bound.
-     * @param messageResource Resource id for the format string - message to show.
-     * @param formatArgs      The format arguments that will be used for substitution.
-     */
-    public static void showSnackMessage(Activity activity, @StringRes int messageResource, Object... formatArgs) {
-        Snackbar.make(
-                activity.findViewById(android.R.id.content),
-                String.format(activity.getString(messageResource, formatArgs)),
-                Snackbar.LENGTH_LONG)
-                .show();
-    }
-
-    /**
-     * Show a temporary message in a Snackbar bound to the content view.
-     *
-     * @param activity Activity to which's content view the Snackbar is bound.
-     * @param message Message to show.
+     * @param activity The {@link Activity} to which's content view the {@link Snackbar} is bound.
+     * @param message  Message to show.
      */
     public static void showSnackMessage(Activity activity, String message) {
         Snackbar.make(activity.findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG).show();
+    }
+
+    /**
+     * Show a temporary message in a {@link Snackbar} bound to the given view.
+     *
+     * @param view            The view the {@link Snackbar} is bound to.
+     * @param messageResource The resource id of the string resource to use. Can be formatted text.
+     */
+    public static void showSnackMessage(View view, @StringRes int messageResource) {
+        Snackbar.make(view, messageResource, Snackbar.LENGTH_LONG).show();
+    }
+
+    /**
+     * Show a temporary message in a {@link Snackbar} bound to the given view.
+     *
+     * @param view    The view the {@link Snackbar} is bound to.
+     * @param message The message.
+     */
+    public static void showSnackMessage(View view, String message) {
+        Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
+    }
+
+    /**
+     * create a temporary message in a {@link Snackbar} bound to the given view.
+     *
+     * @param view            The view the {@link Snackbar} is bound to.
+     * @param messageResource The resource id of the string resource to use. Can be formatted text.
+     */
+    public static Snackbar createSnackbar(View view, @StringRes int messageResource, int length) {
+        return Snackbar.make(view, messageResource, length);
+    }
+
+    /**
+     * Show a temporary message in a {@link Snackbar} bound to the content view.
+     *
+     * @param activity        The {@link Activity} to which's content view the {@link Snackbar} is bound.
+     * @param messageResource The resource id of the string resource to use. Can be formatted text.
+     * @param formatArgs      The format arguments that will be used for substitution.
+     */
+    public static void showSnackMessage(Activity activity, @StringRes int messageResource, Object... formatArgs) {
+        showSnackMessage(activity, activity.findViewById(android.R.id.content), messageResource, formatArgs);
+    }
+
+    /**
+     * Show a temporary message in a {@link Snackbar} bound to the content view.
+     *
+     * @param context         to load resources.
+     * @param view            The content view the {@link Snackbar} is bound to.
+     * @param messageResource The resource id of the string resource to use. Can be formatted text.
+     * @param formatArgs      The format arguments that will be used for substitution.
+     */
+    public static void showSnackMessage(Context context, View view, @StringRes int messageResource, Object... formatArgs) {
+        Snackbar.make(
+                view,
+                String.format(context.getString(messageResource, formatArgs)),
+                Snackbar.LENGTH_LONG)
+                .show();
     }
 
     // Solution inspired by https://stackoverflow.com/questions/34936590/why-isnt-my-vector-drawable-scaling-as-expected
     // Copied from https://raw.githubusercontent.com/nextcloud/talk-android/8ec8606bc61878e87e3ac8ad32c8b72d4680013c/app/src/main/java/com/nextcloud/talk/utils/DisplayUtils.java
     // under GPL3
     public static void useCompatVectorIfNeeded() {
-        if (Build.VERSION.SDK_INT < 23) {
             try {
                 @SuppressLint("RestrictedApi") AppCompatDrawableManager drawableManager = AppCompatDrawableManager.get();
                 Class<?> inflateDelegateClass = Class.forName("android.support.v7.widget.AppCompatDrawableManager$InflateDelegate");
@@ -699,7 +754,33 @@ public class DisplayUtils {
             } catch (Exception e) {
                 Log.e(TAG, "Failed to use reflection to enable proper vector scaling");
             }
-        }
     }
 
+    public static int convertDpToPixel(float dp, Context context) {
+        Resources resources = context.getResources();
+        DisplayMetrics metrics = resources.getDisplayMetrics();
+
+        return (int) (dp * ((float) metrics.densityDpi / DisplayMetrics.DENSITY_DEFAULT));
+    }
+
+    static public void showServerOutdatedSnackbar(Activity activity) {
+        Snackbar.make(activity.findViewById(android.R.id.content),
+                R.string.outdated_server, Snackbar.LENGTH_INDEFINITE)
+                .setAction(R.string.dismiss, v -> {
+                })
+                .show();
+    }
+
+    static public void startLinkIntent(Activity activity, @StringRes int link) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(activity.getString(link)));
+        DisplayUtils.startIntentIfAppAvailable(intent, activity, R.string.no_browser_available);
+    }
+
+    static public void startIntentIfAppAvailable(Intent intent, Activity activity, @StringRes int error) {
+        if (intent.resolveActivity(activity.getPackageManager()) != null) {
+            activity.startActivity(intent);
+        } else {
+            DisplayUtils.showSnackMessage(activity, error);
+        }
+    }
 }

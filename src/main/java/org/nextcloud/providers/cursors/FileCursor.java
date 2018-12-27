@@ -37,7 +37,7 @@ public class FileCursor extends MatrixCursor {
             Document.COLUMN_FLAGS, Document.COLUMN_LAST_MODIFIED
     };
 
-    public FileCursor(String[] projection) {
+    public FileCursor(String... projection) {
         super(projection != null ? projection : DEFAULT_DOCUMENT_PROJECTION);
     }
 
@@ -46,8 +46,8 @@ public class FileCursor extends MatrixCursor {
             return;
         }
 
-        final int iconRes = MimeTypeUtil.getFileTypeIconId(file.getMimetype(), file.getFileName());
-        final String mimeType = file.isFolder() ? Document.MIME_TYPE_DIR : file.getMimetype();
+        final int iconRes = MimeTypeUtil.getFileTypeIconId(file.getMimeType(), file.getFileName());
+        final String mimeType = file.isFolder() ? Document.MIME_TYPE_DIR : file.getMimeType();
         final String imagePath = MimeTypeUtil.isImage(file) && file.isDown() ? file.getStoragePath() : null;
         int flags = imagePath != null ? Document.FLAG_SUPPORTS_THUMBNAIL : 0;
 

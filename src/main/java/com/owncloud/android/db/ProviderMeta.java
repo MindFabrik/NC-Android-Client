@@ -1,4 +1,4 @@
-/**
+/*
  * ownCloud Android client application
  *
  * @author Bartek Przybylski
@@ -32,7 +32,7 @@ import com.owncloud.android.MainApp;
 public class ProviderMeta {
 
     public static final String DB_NAME = "filelist";
-    public static final int DB_VERSION = 31;
+    public static final int DB_VERSION = 39;
 
     private ProviderMeta() {
     }
@@ -103,13 +103,15 @@ public class ProviderMeta {
         public static final String FILE_FAVORITE = "favorite";
         public static final String FILE_IS_ENCRYPTED = "is_encrypted";
         public static final String FILE_MOUNT_TYPE = "mount_type";
+        public static final String FILE_HAS_PREVIEW = "has_preview";
 
         public static final String [] FILE_ALL_COLUMNS = {_ID, FILE_PARENT, FILE_NAME
                , FILE_CREATION, FILE_MODIFIED,
                 FILE_MODIFIED_AT_LAST_SYNC_FOR_DATA, FILE_CONTENT_LENGTH, FILE_CONTENT_TYPE, FILE_STORAGE_PATH,
                 FILE_PATH, FILE_ACCOUNT_OWNER, FILE_LAST_SYNC_DATE, FILE_LAST_SYNC_DATE_FOR_DATA, FILE_KEEP_IN_SYNC,
                 FILE_ETAG, FILE_SHARED_VIA_LINK, FILE_SHARED_WITH_SHAREE, FILE_PUBLIC_LINK, FILE_PERMISSIONS,
-                FILE_REMOTE_ID, FILE_UPDATE_THUMBNAIL, FILE_IS_DOWNLOADING, FILE_ETAG_IN_CONFLICT, FILE_FAVORITE};
+            FILE_REMOTE_ID, FILE_UPDATE_THUMBNAIL, FILE_IS_DOWNLOADING, FILE_ETAG_IN_CONFLICT, FILE_FAVORITE,
+            FILE_HAS_PREVIEW};
 
         public static final String FILE_DEFAULT_SORT_ORDER = FILE_NAME + " collate nocase asc";
 
@@ -128,6 +130,9 @@ public class ProviderMeta {
         public static final String OCSHARES_USER_ID = "user_id";
         public static final String OCSHARES_ID_REMOTE_SHARED = "id_remote_shared";
         public static final String OCSHARES_ACCOUNT_OWNER = "owner_share";
+        public static final String OCSHARES_IS_PASSWORD_PROTECTED = "is_password_protected";
+        public static final String OCSHARES_NOTE = "note";
+        public static final String OCSHARES_HIDE_DOWNLOAD = "hide_download";
 
         public static final String OCSHARES_DEFAULT_SORT_ORDER = OCSHARES_FILE_SOURCE
                 + " collate nocase asc";
@@ -168,8 +173,11 @@ public class ProviderMeta {
         public static final String CAPABILITIES_SERVER_SLOGAN = "server_slogan";
         public static final String CAPABILITIES_SERVER_BACKGROUND_DEFAULT = "background_default";
         public static final String CAPABILITIES_SERVER_BACKGROUND_PLAIN = "background_plain";
-        
         public static final String CAPABILITIES_END_TO_END_ENCRYPTION = "end_to_end_encryption";
+        public static final String CAPABILITIES_ACTIVITY = "activity";
+        public static final String CAPABILITIES_RICHDOCUMENT = "richdocument";
+        public static final String CAPABILITIES_RICHDOCUMENT_MIMETYPE_LIST = "richdocument_mimetype_list";
+        public static final String CAPABILITIES_RICHDOCUMENT_DIRECT_EDITING = "richdocument_direct_editing";
 
         public static final String CAPABILITIES_DEFAULT_SORT_ORDER = CAPABILITIES_ACCOUNT_NAME
                 + " collate nocase asc";
@@ -209,6 +217,7 @@ public class ProviderMeta {
         public static final String EXTERNAL_LINKS_TYPE = "type";
         public static final String EXTERNAL_LINKS_NAME = "name";
         public static final String EXTERNAL_LINKS_URL = "url";
+        public static final String EXTERNAL_LINKS_REDIRECT = "redirect";
 
         // Columns of arbitrary data table
         public static final String ARBITRARY_DATA_CLOUD_ID = "cloud_id";

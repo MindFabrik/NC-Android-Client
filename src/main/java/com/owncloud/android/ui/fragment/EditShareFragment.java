@@ -23,6 +23,7 @@ package com.owncloud.android.ui.fragment;
 import android.accounts.Account;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.AppCompatCheckBox;
 import android.support.v7.widget.SwitchCompat;
@@ -34,7 +35,6 @@ import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import com.owncloud.android.R;
-import com.owncloud.android.authentication.AccountUtils;
 import com.owncloud.android.datamodel.FileDataStorageManager;
 import com.owncloud.android.datamodel.OCFile;
 import com.owncloud.android.lib.common.operations.RemoteOperationResult;
@@ -43,9 +43,7 @@ import com.owncloud.android.lib.resources.shares.OCShare;
 import com.owncloud.android.lib.resources.shares.SharePermissionsBuilder;
 import com.owncloud.android.lib.resources.shares.ShareType;
 import com.owncloud.android.lib.resources.status.OCCapability;
-import com.owncloud.android.lib.resources.status.OwnCloudVersion;
 import com.owncloud.android.ui.activity.FileActivity;
-import com.owncloud.android.utils.AnalyticsUtils;
 import com.owncloud.android.utils.ThemeUtils;
 
 public class EditShareFragment extends Fragment {
@@ -56,8 +54,6 @@ public class EditShareFragment extends Fragment {
     private static final String ARG_SHARE = "SHARE";
     private static final String ARG_FILE = "FILE";
     private static final String ARG_ACCOUNT = "ACCOUNT";
-
-    private static final String SCREEN_NAME = "Share with Sharee";
 
     /** Ids of CheckBoxes depending on R.id.canEdit CheckBox */
     private static final int sSubordinateCheckBoxIds[] = {
@@ -133,8 +129,7 @@ public class EditShareFragment extends Fragment {
      * {@inheritDoc}
      */
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         Log_OC.d(TAG, "onCreateView");
 
         // Inflate the layout for this fragment
@@ -144,7 +139,8 @@ public class EditShareFragment extends Fragment {
                 getResources().getString(R.string.share_with_edit_title, mShare.getSharedWithDisplayName()));
 
         View headerDivider = view.findViewById(R.id.share_header_divider);
-        headerDivider.getBackground().setColorFilter(ThemeUtils.primaryAccentColor(), PorterDuff.Mode.SRC_ATOP);
+        headerDivider.getBackground().setColorFilter(ThemeUtils.primaryAccentColor(getContext()),
+                PorterDuff.Mode.SRC_ATOP);
 
         // Setup layout
         refreshUiFromState(view);
@@ -160,7 +156,7 @@ public class EditShareFragment extends Fragment {
      */
     public void refreshCapabilitiesFromDB() {
         if (getActivity() instanceof FileActivity) {
-            FileActivity fileActivity = ((FileActivity) getActivity());
+            FileActivity fileActivity = (FileActivity) getActivity();
             if (fileActivity.getStorageManager() != null) {
                 mCapabilities = fileActivity.getStorageManager().getCapability(mAccount.name);
             }
@@ -178,10 +174,8 @@ public class EditShareFragment extends Fragment {
 
             int sharePermissions = mShare.getPermissions();
             boolean isFederated = ShareType.FEDERATED.equals(mShare.getShareType());
-            OwnCloudVersion serverVersion = AccountUtils.getServerVersion(mAccount);
-            boolean isNotReshareableFederatedSupported = serverVersion.isNotReshareableFederatedSupported();
 
-            int accentColor = ThemeUtils.primaryAccentColor();
+            int accentColor = ThemeUtils.primaryAccentColor(getContext());
 
             SwitchCompat shareSwitch = editShareView.findViewById(R.id.canShareSwitch);
             ThemeUtils.tintSwitch(shareSwitch, accentColor, true);
@@ -201,32 +195,30 @@ public class EditShareFragment extends Fragment {
             boolean canEdit = (sharePermissions & anyUpdatePermission) > 0;
             switchCompat.setChecked(canEdit);
 
-            boolean areEditOptionsAvailable = !isFederated || isNotReshareableFederatedSupported;
+            boolean areEditOptionsAvailable = !isFederated;
 
             if (mFile.isFolder() && areEditOptionsAvailable) {
                 /// TODO change areEditOptionsAvailable in order to delete !isFederated
                 // from checking when iOS is ready
                 AppCompatCheckBox checkBox = editShareView.findViewById(R.id.canEditCreateCheckBox);
                 checkBox.setChecked((sharePermissions & OCShare.CREATE_PERMISSION_FLAG) > 0);
-                checkBox.setVisibility((canEdit) ? View.VISIBLE : View.GONE);
+                checkBox.setVisibility(canEdit ? View.VISIBLE : View.GONE);
                 ThemeUtils.tintCheckbox(checkBox, accentColor);
 
                 checkBox = editShareView.findViewById(R.id.canEditChangeCheckBox);
                 checkBox.setChecked((sharePermissions & OCShare.UPDATE_PERMISSION_FLAG) > 0);
-                checkBox.setVisibility((canEdit) ? View.VISIBLE : View.GONE);
+                checkBox.setVisibility(canEdit ? View.VISIBLE : View.GONE);
                 ThemeUtils.tintCheckbox(checkBox, accentColor);
 
                 checkBox = editShareView.findViewById(R.id.canEditDeleteCheckBox);
                 checkBox.setChecked((sharePermissions & OCShare.DELETE_PERMISSION_FLAG) > 0);
-                checkBox.setVisibility((canEdit) ? View.VISIBLE : View.GONE);
+                checkBox.setVisibility(canEdit ? View.VISIBLE : View.GONE);
                 ThemeUtils.tintCheckbox(checkBox, accentColor);
             }
 
             setPermissionsListening(editShareView, true);
-
         }
     }
-
 
     /**
      * Binds or unbinds listener for user actions to enable or disable a permission on the edited share
@@ -298,12 +290,11 @@ public class EditShareFragment extends Fragment {
                         if (isChecked) {
                             if (!isFederated) {
                                 /// not federated shares -> enable all the subpermisions
-                                for (int i = 0; i < sSubordinateCheckBoxIds.length; i++) {
+                                for (int subordinateCheckBoxId : sSubordinateCheckBoxIds) {
                                     //noinspection ConstantConditions, prevented in the method beginning
-                                    subordinate = getView().findViewById(sSubordinateCheckBoxIds[i]);
+                                    subordinate = getView().findViewById(subordinateCheckBoxId);
                                     subordinate.setVisibility(View.VISIBLE);
-                                    if (!subordinate.isChecked() &&
-                                            !mFile.isSharedWithMe()) {          // see (1)
+                                    if (!subordinate.isChecked() && !mFile.isSharedWithMe()) { // see (1)
                                         toggleDisablingListener(subordinate);
                                     }
                                 }
@@ -317,9 +308,9 @@ public class EditShareFragment extends Fragment {
 
                             }
                         } else {
-                            for (int i = 0; i < sSubordinateCheckBoxIds.length; i++) {
+                            for (int sSubordinateCheckBoxId : sSubordinateCheckBoxIds) {
                                 //noinspection ConstantConditions, prevented in the method beginning
-                                subordinate = getView().findViewById(sSubordinateCheckBoxIds[i]);
+                                subordinate = getView().findViewById(sSubordinateCheckBoxId);
                                 subordinate.setVisibility(View.GONE);
                                 if (subordinate.isChecked()) {
                                     toggleDisablingListener(subordinate);
@@ -420,15 +411,6 @@ public class EditShareFragment extends Fragment {
             refreshUiFromDB(getView());
         } else {
             refreshUiFromState(getView());
-        }
-    }
-
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (getActivity() != null) {
-            AnalyticsUtils.setCurrentScreenName(getActivity(), SCREEN_NAME, TAG);
         }
     }
 

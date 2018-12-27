@@ -56,8 +56,8 @@ public class DownloadFileOperation extends RemoteOperation {
     private OCFile mFile;
     private String mBehaviour;
     private Context mContext;
-    private Set<OnDatatransferProgressListener> mDataTransferListeners = new HashSet<OnDatatransferProgressListener>();
-    private long mModificationTimestamp = 0;
+    private Set<OnDatatransferProgressListener> mDataTransferListeners = new HashSet<>();
+    private long mModificationTimestamp;
     private String mEtag = "";
     private final AtomicBoolean mCancellationRequested = new AtomicBoolean(false);
     
@@ -121,7 +121,7 @@ public class DownloadFileOperation extends RemoteOperation {
     }
 
     public String getMimeType() {
-        String mimeType = mFile.getMimetype();
+        String mimeType = mFile.getMimeType();
         if (mimeType == null || mimeType.length() <= 0) {
             try {
                 mimeType = MimeTypeMap.getSingleton()
@@ -144,8 +144,7 @@ public class DownloadFileOperation extends RemoteOperation {
     }
     
     public long getModificationTimestamp() {
-        return (mModificationTimestamp > 0) ? mModificationTimestamp :
-                mFile.getModificationTimestamp();
+        return mModificationTimestamp > 0 ? mModificationTimestamp : mFile.getModificationTimestamp();
     }
 
     public String getEtag() {
@@ -154,21 +153,21 @@ public class DownloadFileOperation extends RemoteOperation {
 
     @Override
     protected RemoteOperationResult run(OwnCloudClient client) {
-        RemoteOperationResult result;
-        File newFile;
-        boolean moved;
-        
-        /// download will be performed to a temporal file, then moved to the final location
-        File tmpFile = new File(getTmpPath());
-        
-        String tmpFolder =  getTmpFolder();
-        
         /// perform the download
         synchronized(mCancellationRequested) {
             if (mCancellationRequested.get()) {
                 return new RemoteOperationResult(new OperationCancelledException());
             }
         }
+
+        RemoteOperationResult result;
+        File newFile;
+        boolean moved;
+
+        /// download will be performed to a temporal file, then moved to the final location
+        File tmpFile = new File(getTmpPath());
+
+        String tmpFolder =  getTmpFolder();
         
         mDownloadOperation = new DownloadRemoteFileOperation(mFile.getRemotePath(), tmpFolder);
         Iterator<OnDatatransferProgressListener> listener = mDataTransferListeners.iterator();
@@ -206,7 +205,6 @@ public class DownloadFileOperation extends RemoteOperation {
 
                     FileOutputStream fileOutputStream = new FileOutputStream(tmpFile);
                     fileOutputStream.write(decryptedBytes);
-                    fileOutputStream.close();
                 } catch (Exception e) {
                     return new RemoteOperationResult(e);
                 }

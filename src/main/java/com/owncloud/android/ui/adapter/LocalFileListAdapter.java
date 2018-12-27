@@ -22,17 +22,15 @@ package com.owncloud.android.ui.adapter;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.database.DataSetObserver;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import com.owncloud.android.R;
@@ -48,15 +46,13 @@ import com.owncloud.android.utils.ThemeUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 /**
- * This Adapter populates a RecycylerView with all files and directories contained in a local directory
+ * This Adapter populates a {@link RecyclerView} with all files and directories contained in a local directory
  */
 public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements FilterableListAdapter {
 
@@ -67,7 +63,7 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
     private List<File> mFiles = new ArrayList<>();
     private List<File> mFilesAll = new ArrayList<>();
     private boolean mLocalFolderPicker;
-    private boolean gridView = false;
+    private boolean gridView;
     private LocalFileListFragmentInterface localFileListFragmentInterface;
     private Set<File> checkedFiles;
 
@@ -84,38 +80,8 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
     }
 
     @Override
-    public boolean areAllItemsEnabled() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled(int position) {
-        // footer is not enabled
-        return position < getItemCount();
-    }
-
-    @Override
-    public void registerDataSetObserver(DataSetObserver observer) {
-        // not needed
-    }
-
-    public void unregisterDataSetObserver(DataSetObserver observer) {
-        // not needed
-    }
-
-    @Override
     public int getItemCount() {
         return mFiles.size() + 1;
-    }
-
-    @Override
-    public int getCount() {
-        return mFiles.size() + 1;
-    }
-
-    @Override
-    public File getItem(int position) {
-        return mFiles.get(position);
     }
 
     public boolean isCheckedFile(File file) {
@@ -131,7 +97,14 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
     }
 
     public void addAllFilesToCheckedFiles() {
-        checkedFiles.addAll(mFiles);
+        for (File file : mFiles) {
+
+            // only select files
+            if (file.isFile()) {
+                checkedFiles.add(file);
+            }
+
+        }
     }
 
     public void removeAllFilesFromCheckedFiles() {
@@ -139,7 +112,7 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
     }
 
     public int getItemPosition(File file) {
-        return mFilesAll.indexOf(file);
+        return mFiles.indexOf(file);
     }
 
     public String[] getCheckedFilesPath() {
@@ -160,7 +133,7 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
     }
 
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof LocalFileListFooterViewHolder) {
             ((LocalFileListFooterViewHolder) holder).footerText.setText(getFooterText());
         } else {
@@ -177,7 +150,7 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
                     gridViewHolder.itemLayout.setBackgroundColor(mContext.getResources()
                             .getColor(R.color.selected_item_background));
                     gridViewHolder.checkbox.setImageDrawable(ThemeUtils.tintDrawable(R.drawable.ic_checkbox_marked,
-                            ThemeUtils.primaryColor()));
+                            ThemeUtils.primaryColor(mContext)));
                 } else {
                     gridViewHolder.itemLayout.setBackgroundColor(Color.WHITE);
                     gridViewHolder.checkbox.setImageResource(R.drawable.ic_checkbox_blank_outline);
@@ -225,21 +198,21 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     private void setThumbnail(File file, ImageView thumbnailView) {
         if (file.isDirectory()) {
-            thumbnailView.setImageDrawable(MimeTypeUtil.getDefaultFolderIcon());
+            thumbnailView.setImageDrawable(MimeTypeUtil.getDefaultFolderIcon(mContext));
         } else {
             thumbnailView.setImageResource(R.drawable.file);
 
-            /** Cancellation needs do be checked and done before changing the drawable in fileIcon, or
+            /* Cancellation needs do be checked and done before changing the drawable in fileIcon, or
              * {@link ThumbnailsCacheManager#cancelPotentialThumbnailWork} will NEVER cancel any task.
-             **/
-            boolean allowedToCreateNewThumbnail = (ThumbnailsCacheManager.cancelPotentialThumbnailWork(file, thumbnailView));
+             */
+            boolean allowedToCreateNewThumbnail = ThumbnailsCacheManager.cancelPotentialThumbnailWork(file, thumbnailView);
 
 
             // get Thumbnail if file is image
             if (MimeTypeUtil.isImage(file)) {
                 // Thumbnail in Cache?
                 Bitmap thumbnail = ThumbnailsCacheManager.getBitmapFromDiskCache(
-                        ThumbnailsCacheManager.PREFIX_THUMBNAIL + String.valueOf(file.hashCode())
+                        ThumbnailsCacheManager.PREFIX_THUMBNAIL + file.hashCode()
                 );
                 if (thumbnail != null) {
                     thumbnailView.setImageBitmap(thumbnail);
@@ -267,8 +240,7 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
                     } // else, already being generated, don't restart it
                 }
             } else {
-                thumbnailView.setImageDrawable(MimeTypeUtil.getFileTypeIcon(null, file.getName(), null)
-                );
+                thumbnailView.setImageDrawable(MimeTypeUtil.getFileTypeIcon(null, file.getName(), mContext));
             }
         }
     }
@@ -282,8 +254,9 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
     }
 
+    @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         switch (viewType) {
             default:
             case VIEWTYPE_ITEM:
@@ -299,69 +272,6 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
                 View itemView = LayoutInflater.from(mContext).inflate(R.layout.list_footer, parent, false);
                 return new LocalFileListFooterViewHolder(itemView);
         }
-    }
-
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        View view = convertView;
-        File file = null;
-
-        boolean isGridView = true;
-
-        ImageView checkBoxV = view.findViewById(R.id.custom_checkbox);
-        TextView fileSizeV = view.findViewById(R.id.file_size);
-        TextView fileSizeSeparatorV = view.findViewById(R.id.file_separator);
-        if (!isGridView) {
-            TextView lastModV = view.findViewById(R.id.last_mod);
-            lastModV.setVisibility(View.VISIBLE);
-            lastModV.setText(DisplayUtils.getRelativeTimestamp(mContext, file.lastModified()));
-            view.findViewById(R.id.overflow_menu).setVisibility(View.GONE);
-        }
-
-        if (!file.isDirectory()) {
-            if (!isGridView) {
-                fileSizeSeparatorV.setVisibility(View.VISIBLE);
-                fileSizeV.setVisibility(View.VISIBLE);
-                fileSizeV.setText(DisplayUtils.bytesToHumanReadable(file.length()));
-            }
-
-            AbsListView parentList = (AbsListView) parent;
-            if (parentList.getChoiceMode() == ListView.CHOICE_MODE_NONE) {
-                checkBoxV.setVisibility(View.GONE);
-            } else {
-                if (parentList.isItemChecked(position)) {
-                    checkBoxV.setImageResource(R.drawable.ic_checkbox_marked);
-                } else {
-                    checkBoxV.setImageResource(R.drawable.ic_checkbox_blank_outline);
-                }
-                checkBoxV.setVisibility(View.VISIBLE);
-            }
-        } else {
-            if (!isGridView) {
-                fileSizeSeparatorV.setVisibility(View.GONE);
-                fileSizeV.setVisibility(View.GONE);
-            }
-            checkBoxV.setVisibility(View.GONE);
-        }
-
-        // not GONE; the alignment changes; ugly way to keep it
-        view.findViewById(R.id.localFileIndicator).setVisibility(View.INVISIBLE);
-        view.findViewById(R.id.keptOfflineIcon).setVisibility(View.GONE);
-        view.findViewById(R.id.favorite_action).setVisibility(View.GONE);
-
-        view.findViewById(R.id.sharedIcon).setVisibility(View.GONE);
-
-        return view;
-    }
-
-    @Override
-    public int getViewTypeCount() {
-        return 1;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return mFiles.isEmpty();
     }
 
     /**
@@ -384,24 +294,7 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
             }
         }
 
-        Collections.sort(mFiles, new Comparator<File>() {
-            @Override
-            public int compare(File lhs, File rhs) {
-                if (lhs.isDirectory() && !rhs.isDirectory()) {
-                    return -1;
-                } else if (!lhs.isDirectory() && rhs.isDirectory()) {
-                    return 1;
-                }
-                return compareNames(lhs, rhs);
-            }
-
-            private int compareNames(File lhs, File rhs) {
-                return lhs.getName().toLowerCase(Locale.getDefault()).compareTo(
-                        rhs.getName().toLowerCase(Locale.getDefault()));
-            }
-        });
-
-        FileSortOrder sortOrder = PreferenceManager.getSortOrder(mContext, null);
+        FileSortOrder sortOrder = PreferenceManager.getSortOrderByType(mContext, FileSortOrder.Type.localFileListView);
         mFiles = sortOrder.sortLocalFiles(mFiles);
 
         // Fetch preferences for showing hidden files
@@ -417,13 +310,13 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
     }
 
     public void setSortOrder(FileSortOrder sortOrder) {
-        PreferenceManager.setSortOrder(mContext, null, sortOrder);
+        PreferenceManager.setSortOrder(mContext, FileSortOrder.Type.localFileListView, sortOrder);
         mFiles = sortOrder.sortLocalFiles(mFiles);
         notifyDataSetChanged();
     }
 
     private List<File> getFolders(final File directory) {
-        File[] folders = directory.listFiles(File::isFile);
+        File[] folders = directory.listFiles(File::isDirectory);
 
         if (folders != null && folders.length > 0) {
             return new ArrayList<>(Arrays.asList(folders));
@@ -464,7 +357,7 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
      * @param files ArrayList of files to filter
      * @return Non-hidden files
      */
-    public List<File> filterHiddenFiles(List<File> files) {
+    private List<File> filterHiddenFiles(List<File> files) {
         List<File> ret = new ArrayList<>();
 
         for (File file : files) {
@@ -510,7 +403,11 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
         return output;
     }
 
-    static class LocalFileListItemViewHolder extends LocalFileListGridViewHolder {
+    public void setGridView(boolean gridView) {
+        this.gridView = gridView;
+    }
+
+    private static class LocalFileListItemViewHolder extends LocalFileListGridViewHolder {
         private final TextView fileSize;
         private final TextView lastModification;
         private final TextView fileSeparator;
@@ -521,6 +418,8 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
             fileSize = itemView.findViewById(R.id.file_size);
             fileSeparator = itemView.findViewById(R.id.file_separator);
             lastModification = itemView.findViewById(R.id.last_mod);
+
+            itemView.findViewById(R.id.overflow_menu).setVisibility(View.GONE);
         }
     }
 
@@ -538,7 +437,6 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
             checkbox = itemView.findViewById(R.id.custom_checkbox);
             itemLayout = itemView.findViewById(R.id.ListItemLayout);
 
-            itemView.findViewById(R.id.overflow_menu).setVisibility(View.GONE);
             itemView.findViewById(R.id.sharedIcon).setVisibility(View.GONE);
             itemView.findViewById(R.id.favorite_action).setVisibility(View.GONE);
             itemView.findViewById(R.id.keptOfflineIcon).setVisibility(View.GONE);
@@ -546,7 +444,7 @@ public class LocalFileListAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
     }
 
-    static class LocalFileListFooterViewHolder extends RecyclerView.ViewHolder {
+    private static class LocalFileListFooterViewHolder extends RecyclerView.ViewHolder {
         private final TextView footerText;
 
         private LocalFileListFooterViewHolder(View itemView) {

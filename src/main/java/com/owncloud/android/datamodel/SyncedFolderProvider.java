@@ -78,6 +78,24 @@ public class SyncedFolderProvider extends Observable {
         }
     }
 
+    public int countEnabledSyncedFolders() {
+        int count = 0;
+        Cursor cursor = mContentResolver.query(
+                ProviderMeta.ProviderTableMeta.CONTENT_URI_SYNCED_FOLDERS,
+                null,
+                ProviderMeta.ProviderTableMeta.SYNCED_FOLDER_ENABLED + " = ?",
+                new String[]{"1"},
+                null
+        );
+
+        if (cursor != null) {
+             count = cursor.getCount();
+             cursor.close();
+        }
+
+        return count;
+    }
+
     /**
      * get all synced folder entries.
      *
@@ -160,20 +178,16 @@ public class SyncedFolderProvider extends Observable {
         return result;
     }
 
-    /**
-     * find a synced folder by local path.
-     *
-     * @param localPath the local path of the local folder
-     * @return the synced folder if found, else null
-     */
-    public SyncedFolder findByLocalPath(String localPath) {
+    public SyncedFolder findByLocalPathAndAccount(String localPath, Account account) {
+
         SyncedFolder result = null;
         Cursor cursor = mContentResolver.query(
-                ProviderMeta.ProviderTableMeta.CONTENT_URI_SYNCED_FOLDERS,
-                null,
-                ProviderMeta.ProviderTableMeta.SYNCED_FOLDER_LOCAL_PATH + "== \"" + localPath + "\"",
-                null,
-                null
+            ProviderMeta.ProviderTableMeta.CONTENT_URI_SYNCED_FOLDERS,
+            null,
+            ProviderMeta.ProviderTableMeta.SYNCED_FOLDER_LOCAL_PATH + "=? AND " +
+                ProviderMeta.ProviderTableMeta.SYNCED_FOLDER_ACCOUNT + " =? ",
+            new String[]{localPath, account.name},
+            null
         );
 
         if (cursor != null && cursor.getCount() == 1) {
@@ -192,6 +206,7 @@ public class SyncedFolderProvider extends Observable {
         }
 
         return result;
+
     }
 
     /**
@@ -200,14 +215,11 @@ public class SyncedFolderProvider extends Observable {
      *  @param account whose synced folders should be deleted
      */
     public int deleteSyncFoldersForAccount(Account account) {
-        int result = mContentResolver.delete(
+        return mContentResolver.delete(
                 ProviderMeta.ProviderTableMeta.CONTENT_URI_SYNCED_FOLDERS,
                 ProviderMeta.ProviderTableMeta.SYNCED_FOLDER_ACCOUNT + " = ?",
                 new String[]{String.valueOf(account.name)}
         );
-
-        return result;
-
     }
 
     /**
@@ -232,16 +244,15 @@ public class SyncedFolderProvider extends Observable {
      */
     public void updateAutoUploadPaths(Context context) {
         List<SyncedFolder> syncedFolders = getSyncedFolders();
-        for (int i = 0; i < syncedFolders.size(); i++) {
-            SyncedFolder syncedFolder = syncedFolders.get(i);
+        for (SyncedFolder syncedFolder : syncedFolders) {
             if (!new File(syncedFolder.getLocalPath()).exists()) {
                 String localPath = syncedFolder.getLocalPath();
                 if (localPath.endsWith("/")) {
-                    localPath = localPath.substring(0, localPath.lastIndexOf("/"));
+                    localPath = localPath.substring(0, localPath.lastIndexOf('/'));
                 }
-                localPath = localPath.substring(0, localPath.lastIndexOf("/"));
+                localPath = localPath.substring(0, localPath.lastIndexOf('/'));
                 if (new File(localPath).exists()) {
-                    syncedFolders.get(i).setLocalPath(localPath);
+                    syncedFolder.setLocalPath(localPath);
                     updateSyncFolder(syncedFolder);
                 } else {
                     deleteSyncFolderWithId(syncedFolder.getId());
@@ -261,7 +272,7 @@ public class SyncedFolderProvider extends Observable {
      * @param ids     the list of ids to be excluded from deletion.
      * @return number of deleted records.
      */
-    public int deleteSyncedFoldersNotInList(Context context, ArrayList<Long> ids) {
+    public int deleteSyncedFoldersNotInList(Context context, List<Long> ids) {
         int result = mContentResolver.delete(
                 ProviderMeta.ProviderTableMeta.CONTENT_URI_SYNCED_FOLDERS,
                 ProviderMeta.ProviderTableMeta._ID + " NOT IN (?)",
@@ -297,14 +308,12 @@ public class SyncedFolderProvider extends Observable {
 
         ContentValues cv = createContentValuesFromSyncedFolder(syncedFolder);
 
-        int result = mContentResolver.update(
+        return mContentResolver.update(
                 ProviderMeta.ProviderTableMeta.CONTENT_URI_SYNCED_FOLDERS,
                 cv,
                 ProviderMeta.ProviderTableMeta._ID + "=?",
                 new String[]{String.valueOf(syncedFolder.getId())}
         );
-
-        return result;
     }
 
     /**

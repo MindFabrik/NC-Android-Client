@@ -23,6 +23,9 @@ package com.owncloud.android.ui.fragment;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.annotation.NonNull;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -33,7 +36,6 @@ import com.owncloud.android.R;
 import com.owncloud.android.lib.common.utils.Log_OC;
 import com.owncloud.android.ui.adapter.LocalFileListAdapter;
 import com.owncloud.android.ui.interfaces.LocalFileListFragmentInterface;
-import com.owncloud.android.utils.AnalyticsUtils;
 import com.owncloud.android.utils.FileSortOrder;
 
 import java.io.File;
@@ -49,25 +51,15 @@ public class LocalFileListFragment extends ExtendedListFragment implements Local
     private LocalFileListFragment.ContainerActivity mContainerActivity;
 
     /** Directory to show */
-    private File mDirectory = null;
+    private File mDirectory;
 
     /** Adapter to connect the data from the directory with the View object */
-    private LocalFileListAdapter mAdapter = null;
-
-    private static final String SCREEN_NAME = "Local file browser";
+    private LocalFileListAdapter mAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (getActivity() != null) {
-            AnalyticsUtils.setCurrentScreenName(getActivity(), SCREEN_NAME, TAG);
-        }
     }
 
     /**
@@ -88,7 +80,7 @@ public class LocalFileListFragment extends ExtendedListFragment implements Local
      * {@inheritDoc}
      */
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         Log_OC.i(TAG, "onCreateView() start");
         View v = super.onCreateView(inflater, container, savedInstanceState);
 
@@ -101,7 +93,7 @@ public class LocalFileListFragment extends ExtendedListFragment implements Local
         }
 
         setSwipeEnabled(false); // Disable pull-to-refresh
-        setFabEnabled(false); // Disable FAB
+        setFabVisible(false); // Disable FAB
 
         Log_OC.i(TAG, "onCreateView() end");
         return v;
@@ -121,6 +113,8 @@ public class LocalFileListFragment extends ExtendedListFragment implements Local
                 mContainerActivity.getInitialDirectory(), this, getActivity());
         setRecyclerViewAdapter(mAdapter);
 
+        listDirectory(mContainerActivity.getInitialDirectory());
+
         Log_OC.i(TAG, "onActivityCreated() stop");
     }
 
@@ -130,7 +124,7 @@ public class LocalFileListFragment extends ExtendedListFragment implements Local
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         if (mContainerActivity.isFolderPickerMode()) {
-            menu.removeItem(R.id.action_select_all_action_menu);
+            menu.removeItem(R.id.action_select_all);
             menu.removeItem(R.id.action_search);
         } else {
             super.onCreateOptionsMenu(menu, inflater);
@@ -277,6 +271,43 @@ public class LocalFileListFragment extends ExtendedListFragment implements Local
         for (int i = 0; i < mAdapter.getItemCount(); i++) {
             mAdapter.notifyItemChanged(i);
         }
+    }
+
+    @Override
+    public void switchToGridView() {
+        mAdapter.setGridView(true);
+        /**
+         * Set recyclerview adapter again to force new view for items. If this is not done
+         * a few items keep their old view.
+         *
+         * https://stackoverflow.com/questions/36495009/force-recyclerview-to-redraw-android
+         */
+        getRecyclerView().setAdapter(mAdapter);
+
+        if (!isGridEnabled()) {
+            RecyclerView.LayoutManager layoutManager;
+            layoutManager = new GridLayoutManager(getContext(), getColumnSize());
+            ((GridLayoutManager) layoutManager).setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+                @Override
+                public int getSpanSize(int position) {
+                    if (position == mAdapter.getItemCount() - 1) {
+                        return ((GridLayoutManager) layoutManager).getSpanCount();
+                    } else {
+                        return 1;
+                    }
+                }
+            });
+
+            getRecyclerView().setLayoutManager(layoutManager);
+        }
+    }
+
+    @Override
+    public void switchToListView() {
+        mAdapter.setGridView(false);
+        /** Same problem here, see switchToGridView() */
+        getRecyclerView().setAdapter(mAdapter);
+        super.switchToListView();
     }
 
     /**

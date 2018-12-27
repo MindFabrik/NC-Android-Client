@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.Map;
 
 public class UploaderAdapter extends SimpleAdapter {
-    
+
     private Context mContext;
     private Account mAccount;
     private FileDataStorageManager mStorageManager;
@@ -94,7 +94,7 @@ public class UploaderAdapter extends SimpleAdapter {
         if (file.isFolder()) {
             fileIcon.setImageDrawable(MimeTypeUtil.getFolderTypeIcon(file.isSharedWithMe() ||
                             file.isSharedWithSharee(), file.isSharedViaLink(), file.isEncrypted(), mAccount,
-                    file.getMountType()));
+                    file.getMountType(), mContext));
         } else {
             // get Thumbnail if file is image
             if (MimeTypeUtil.isImage(file) && file.getRemoteId() != null) {
@@ -102,7 +102,7 @@ public class UploaderAdapter extends SimpleAdapter {
                 Bitmap thumbnail = ThumbnailsCacheManager.getBitmapFromDiskCache(
                         String.valueOf(file.getRemoteId())
                 );
-                if (thumbnail != null && !file.needsUpdateThumbnail()) {
+                if (thumbnail != null && !file.isUpdateThumbnailNeeded()) {
                     fileIcon.setImageBitmap(thumbnail);
                 } else {
                     // generate new Thumbnail
@@ -128,7 +128,7 @@ public class UploaderAdapter extends SimpleAdapter {
                 }
             } else {
                 fileIcon.setImageDrawable(
-                        MimeTypeUtil.getFileTypeIcon(file.getMimetype(), file.getFileName(), mAccount)
+                        MimeTypeUtil.getFileTypeIcon(file.getMimeType(), file.getFileName(), mAccount, mContext)
                 );
             }
         }

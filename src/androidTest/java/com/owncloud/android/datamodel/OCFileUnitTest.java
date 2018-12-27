@@ -1,21 +1,20 @@
-/**
- *   ownCloud Android client application
+/*
+ * ownCloud Android client application
  *
- *   @author David A. Velasco
- *   Copyright (C) 2016 ownCloud Inc.
- *
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License version 2,
- *   as published by the Free Software Foundation.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
+ * @author David A. Velasco
+ * Copyright (C) 2016 ownCloud Inc.
+ * <p>
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2,
+ * as published by the Free Software Foundation.
+ * <p>
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 
@@ -78,7 +77,7 @@ public class OCFileUnitTest {
         mFile.setFileId(ID);
         mFile.setParentId(PARENT_ID);
         mFile.setStoragePath(STORAGE_PATH);
-        mFile.setMimetype(MIME_TYPE);
+        mFile.setMimeType(MIME_TYPE);
         mFile.setFileLength(FILE_LENGTH);
         mFile.setCreationTimestamp(CREATION_TIMESTAMP);
         mFile.setModificationTimestamp(MODIFICATION_TIMESTAMP);
@@ -87,12 +86,12 @@ public class OCFileUnitTest {
         mFile.setLastSyncDateForData(LAST_SYNC_DATE_FOR_DATA);
         mFile.setAvailableOffline(true);
         mFile.setEtag(ETAG);
-        mFile.setShareViaLink(true);
-        mFile.setShareWithSharee(true);
+        mFile.setSharedViaLink(true);
+        mFile.setSharedWithSharee(true);
         mFile.setPublicLink(PUBLIC_LINK);
         mFile.setPermissions(PERMISSIONS);
         mFile.setRemoteId(REMOTE_ID);
-        mFile.setNeedsUpdateThumbnail(true);
+        mFile.setUpdateThumbnailNeeded(true);
         mFile.setDownloading(true);
         mFile.setEtagInConflict(ETAG_IN_CONFLICT);
 
@@ -110,13 +109,13 @@ public class OCFileUnitTest {
         assertThat(fileReadFromParcel.getFileId(), is(ID));
         assertThat(fileReadFromParcel.getParentId(), is(PARENT_ID));
         assertThat(fileReadFromParcel.getStoragePath(), is(STORAGE_PATH));
-        assertThat(fileReadFromParcel.getMimetype(), is(MIME_TYPE));
+        assertThat(fileReadFromParcel.getMimeType(), is(MIME_TYPE));
         assertThat(fileReadFromParcel.getFileLength(), is(FILE_LENGTH));
         assertThat(fileReadFromParcel.getCreationTimestamp(), is(CREATION_TIMESTAMP));
         assertThat(fileReadFromParcel.getModificationTimestamp(), is(MODIFICATION_TIMESTAMP));
         assertThat(
-            fileReadFromParcel.getModificationTimestampAtLastSyncForData(),
-            is(MODIFICATION_TIMESTAMP_AT_LAST_SYNC_FOR_DATA)
+                fileReadFromParcel.getModificationTimestampAtLastSyncForData(),
+                is(MODIFICATION_TIMESTAMP_AT_LAST_SYNC_FOR_DATA)
         );
         assertThat(fileReadFromParcel.getLastSyncDateForProperties(), is(LAST_SYNC_DATE_FOR_PROPERTIES));
         assertThat(fileReadFromParcel.getLastSyncDateForData(), is(LAST_SYNC_DATE_FOR_DATA));
@@ -127,9 +126,8 @@ public class OCFileUnitTest {
         assertThat(fileReadFromParcel.getPublicLink(), is(PUBLIC_LINK));
         assertThat(fileReadFromParcel.getPermissions(), is(PERMISSIONS));
         assertThat(fileReadFromParcel.getRemoteId(), is(REMOTE_ID));
-        assertThat(fileReadFromParcel.needsUpdateThumbnail(), is(true));
+        assertThat(fileReadFromParcel.isUpdateThumbnailNeeded(), is(true));
         assertThat(fileReadFromParcel.isDownloading(), is(true));
         assertThat(fileReadFromParcel.getEtagInConflict(), is(ETAG_IN_CONFLICT));
-
     }
 }

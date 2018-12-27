@@ -17,24 +17,22 @@
   You should have received a copy of the GNU Affero General Public
   License along with this program. If not, see <http://www.gnu.org/licenses/>.
 -->
-
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:paddingTop="@dimen/standard_padding"
     android:paddingRight="@dimen/standard_padding"
     android:paddingBottom="@dimen/standard_padding"
     android:paddingLeft="@dimen/standard_padding">
 
     <ImageView
         android:id="@+id/activity_icon"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="@dimen/activity_icon_width"
+        android:layout_height="@dimen/activity_icon_height"
         android:layout_alignParentTop="true"
-        android:layout_marginRight="24dp"
-        android:layout_marginEnd="24dp"
+        android:layout_marginTop="@dimen/standard_margin"
         android:alpha="0.5"
         android:src="@drawable/ic_activity"
         android:contentDescription="@string/activity_icon"/>
@@ -43,7 +41,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_alignTop="@id/activity_icon"
         android:layout_toRightOf="@id/activity_icon"
         android:layout_toEndOf="@id/activity_icon">
 
@@ -52,24 +49,37 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:text="@string/placeholder_filename"
-            android:textAppearance="?android:attr/textAppearanceListItem"/>
+            android:paddingEnd="@dimen/zero"
+            android:paddingLeft="@dimen/activity_icon_layout_right_end_margin"
+            android:paddingRight="@dimen/zero"
+            android:paddingStart="@dimen/activity_icon_layout_right_end_margin"
+            android:paddingTop="@dimen/standard_padding"
+            tools:text="@string/placeholder_filename"
+            android:textAppearance="?android:attr/textAppearanceListItem" />
 
         <TextView
             android:id="@+id/activity_message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingEnd="@dimen/zero"
+            android:paddingLeft="@dimen/activity_icon_layout_right_end_margin"
+            android:paddingRight="@dimen/zero"
+            android:paddingStart="@dimen/activity_icon_layout_right_end_margin"
             android:ellipsize="end"
-            android:text="@string/placeholder_sentence"
-            android:textColor="?android:attr/textColorSecondary"/>
+            tools:text="@string/placeholder_sentence"
+            android:textAppearance="?android:attr/textAppearanceListItem"/>
 
         <GridLayout
             android:id="@+id/list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginLeft="-3dp"
-            android:layout_marginStart="-3dp"
+            android:layout_marginTop="@dimen/alternate_half_margin"
+            android:layout_marginLeft="@dimen/activity_list_item_grid_layout_left_start_margin"
+            android:layout_marginStart="@dimen/activity_list_item_grid_layout_left_start_margin"
+            android:paddingEnd="@dimen/zero"
+            android:paddingLeft="@dimen/activity_icon_layout_right_end_margin"
+            android:paddingRight="@dimen/zero"
+            android:paddingStart="@dimen/activity_icon_layout_right_end_margin"
             android:columnCount="3" />
 
         <TextView
@@ -78,7 +88,11 @@
             android:layout_height="wrap_content"
             android:layout_gravity="end"
             android:ellipsize="end"
-            android:text="@string/placeholder_sentence"
+            android:paddingEnd="@dimen/zero"
+            android:paddingLeft="@dimen/activity_icon_layout_right_end_margin"
+            android:paddingRight="@dimen/zero"
+            android:paddingStart="@dimen/activity_icon_layout_right_end_margin"
+            tools:text="@string/placeholder_sentence"
             android:textColor="?android:attr/textColorSecondary"/>
 
     </LinearLayout>

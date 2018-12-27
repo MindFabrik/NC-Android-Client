@@ -43,7 +43,7 @@ public class MediaServiceBinder extends Binder implements MediaController.MediaP
     /**
      * {@link MediaService} instance to access with the binder
      */
-    private MediaService mService = null;
+    private MediaService mService;
 
     /**
      * Public constructor
@@ -57,11 +57,9 @@ public class MediaServiceBinder extends Binder implements MediaController.MediaP
         mService = service;
     }
 
-
     public boolean isPlaying(OCFile mFile) {
-        return (mFile != null && mFile.equals(mService.getCurrentFile()));
+        return mFile != null && mFile.equals(mService.getCurrentFile());
     }
-
 
     @Override
     public boolean canPause() {
@@ -120,7 +118,7 @@ public class MediaServiceBinder extends Binder implements MediaController.MediaP
     @Override
     public boolean isPlaying() {
         MediaService.State currentState = mService.getState();
-        return (currentState == State.PLAYING || (currentState == State.PREPARING && mService.mPlayOnPrepared));
+        return currentState == State.PLAYING || (currentState == State.PREPARING && mService.mPlayOnPrepared);
     }
 
 
@@ -159,27 +157,25 @@ public class MediaServiceBinder extends Binder implements MediaController.MediaP
 
 
     public void registerMediaController(MediaControlView mediaController) {
-        mService.setMediaContoller(mediaController);
+        mService.setMediaController(mediaController);
     }
 
     public void unregisterMediaController(MediaControlView mediaController) {
         if (mediaController != null && mediaController == mService.getMediaController()) {
-            mService.setMediaContoller(null);
+            mService.setMediaController(null);
         }
 
     }
 
     public boolean isInPlaybackState() {
         MediaService.State currentState = mService.getState();
-        return (currentState == MediaService.State.PLAYING || currentState == MediaService.State.PAUSED);
+        return currentState == MediaService.State.PLAYING || currentState == MediaService.State.PAUSED;
     }
-
 
     @Override
     public int getAudioSessionId() {
         return 1; // not really used
     }
-
 }
 
 

@@ -26,6 +26,7 @@ import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.graphics.Point;
@@ -34,6 +35,7 @@ import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
+import android.preference.PreferenceManager;
 import android.provider.DocumentsProvider;
 import android.util.Log;
 import android.widget.Toast;
@@ -47,6 +49,7 @@ import com.owncloud.android.files.services.FileDownloader;
 import com.owncloud.android.lib.common.operations.RemoteOperationResult;
 import com.owncloud.android.operations.SynchronizeFileOperation;
 import com.owncloud.android.ui.activity.ConflictsResolveActivity;
+import com.owncloud.android.ui.activity.Preferences;
 import com.owncloud.android.utils.FileStorageUtils;
 
 import org.nextcloud.providers.cursors.FileCursor;
@@ -54,20 +57,28 @@ import org.nextcloud.providers.cursors.RootCursor;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 @TargetApi(Build.VERSION_CODES.KITKAT)
 public class DocumentsStorageProvider extends DocumentsProvider {
 
     private static final String TAG = "DocumentsStorageProvider";
 
-    private FileDataStorageManager mCurrentStorageManager = null;
+    private FileDataStorageManager mCurrentStorageManager;
     private static Map<Long, FileDataStorageManager> mRootIdToStorageManager;
 
     @Override
     public Cursor queryRoots(String[] projection) throws FileNotFoundException {
+
+        SharedPreferences appPrefs = PreferenceManager.getDefaultSharedPreferences(MainApp.getAppContext());
+        if (appPrefs.getString(Preferences.PREFERENCE_LOCK, "").equals(Preferences.LOCK_PASSCODE) ||
+                appPrefs.getString(Preferences.PREFERENCE_LOCK, "").equals(Preferences.LOCK_DEVICE_CREDENTIALS)) {
+            return new FileCursor(new String[]{});
+        }
+        
         initiateStorageMap();
 
         final RootCursor result = new RootCursor(projection);
@@ -281,8 +292,8 @@ public class DocumentsStorageProvider extends DocumentsProvider {
         return !(cancellationSignal != null && cancellationSignal.isCanceled());
     }
 
-    Vector<OCFile> findFiles(OCFile root, String query) {
-        Vector<OCFile> result = new Vector<>();
+    List<OCFile> findFiles(OCFile root, String query) {
+        List<OCFile> result = new ArrayList<>();
         for (OCFile f : mCurrentStorageManager.getFolderContent(root, false)) {
             if (f.isFolder()) {
                 result.addAll(findFiles(f, query));

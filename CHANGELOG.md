@@ -1,24 +1,91 @@
-## 3.1.0 
+## 3.4.0 (December, 2018)
+- hide download when creating share links
+- direct editing files with Collabora (Collabora Server >=4.0)
+- sort deleted files by deletion date by default
+- set/edit notes on shares
+- search inside of text files
+- actions on notifications
+- remember last path on upload
+- share file to Talk room
+- show local size in "on device" view
+- bug fixes
+
+For full list please see https://github.com/nextcloud/android/milestone/25
+
+## 3.3.2 (November, 2, 2018)
+- fix fingerprint not working on certain devices
+
+For full list please see https://github.com/nextcloud/android/milestone/27
+
+## 3.3.1 (October, 29, 2018)
+Bugfix release
+- fix crash on shared folder/file via Talk
+- fix crash on Notification activity
+- fixed setup DAVdroid via settings
+- hide edit option on shares, if not allowed
+
+For full list please see https://github.com/nextcloud/android/milestone/26
+
+## 3.3.0 (September, 19, 2018)
+- Support for Trashbin (Nc14+)
+- Media streaming (Nc14+)
+- New media detection for AutoUpload
+- Improved TalkBack screenreader support
+- Show outdated server warning for server <NC12
+- Add support for device credentials
+- Show offline / maintenance info
+- Improved activities
+- Improved file detail / sharing with comments
+- Improved Share link creation via bottom sheet
+- Improved Notification, supporting actions
+- Minor UI/UX improvements
+- Many bug fixes
+
+## 3.2.4 (September, 04, 2018)
+- Fix push notification on gplay release
+
+## 3.2.3 (August, 21, 2018)
+- Fix crash on Android Android 4.x
+
+## 3.2.2 (August, 20, 2018)
+- New simple signup screen
+
+## 3.2.1 (June, 11, 2018)
+- Enhanced file detail/sharing screen for mail-shares
+- Fix local sorting and file selection
+- Fix local filtering
+- Fix back navigation on privacy screen
+- Fix bug on searching
+- Fix crash on sorting
+- Fix wrong menu highlighting
+- various bug fixes
+
+## 3.2.0 (May, 13, 2018)
+- Revamped details screen & sharing
+- minor UI/UX improvements
+- many bug fixes
+ 
+## 3.1.0 (April, 22, 2018)
 - enhance support for 8.x
 - speed improvements
 - minor UI/UX improvements
 - many bug fixes
 
-## 3.0.3 (Mar, 05, 2018)
+## 3.0.3 (March, 05, 2018)
 - Fix creating folders in auto upload
 
-## 3.0.2 (Feb, 27, 2018)
+## 3.0.2 (February, 27, 2018)
 - Fix crash on old android versions
 - Fix E2E
 - Fix crash on old server
 
-## 3.0.1 (Feb, 14, 2018)
+## 3.0.1 (February, 14, 2018)
 - Bugfix E2E
 - Fix SSL via PlayStore updater
 - Fix push notification
 - New android lib, fixing wrong user agent
 
-## 3.0.0 (Feb, 08, 2018)
+## 3.0.0 (February, 08, 2018)
 - End to end encryption
 - Screen adapted images instead of downloading
 - direct access to operations for single files
@@ -34,7 +101,7 @@
 - UI enhancements
 - bug fixes
 
-## 2.0.0 (Oct, 17, 2017)
+## 2.0.0 (October, 17, 2017)
 - Account-wide search (Nc 12+)
 - Auto upload available on Android 4+
 - Separation between Image & Video for Auto upload

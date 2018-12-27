@@ -45,12 +45,13 @@ import java.util.Observable;
  * information for each file.
  */
 public class UploadsStorageManager extends Observable {
+    private static final String TAG = UploadsStorageManager.class.getSimpleName();
 
     private static final String AND = " AND ";
-    static private final String TAG = UploadsStorageManager.class.getSimpleName();
+    private static final int SINGLE_RESULT = 1;
+
     private ContentResolver mContentResolver;
     private Context mContext;
-
 
     public UploadsStorageManager(ContentResolver contentResolver, Context context) {
         if (contentResolver == null) {
@@ -79,7 +80,7 @@ public class UploadsStorageManager extends Observable {
         cv.put(ProviderTableMeta.UPLOADS_FORCE_OVERWRITE, ocUpload.isForceOverwrite() ? 1 : 0);
         cv.put(ProviderTableMeta.UPLOADS_IS_CREATE_REMOTE_FOLDER, ocUpload.isCreateRemoteFolder() ? 1 : 0);
         cv.put(ProviderTableMeta.UPLOADS_LAST_RESULT, ocUpload.getLastResult().getValue());
-        cv.put(ProviderTableMeta.UPLOADS_CREATED_BY, ocUpload.getCreadtedBy());
+        cv.put(ProviderTableMeta.UPLOADS_CREATED_BY, ocUpload.getCreatedBy());
         cv.put(ProviderTableMeta.UPLOADS_IS_WHILE_CHARGING_ONLY, ocUpload.isWhileChargingOnly() ? 1 : 0);
         cv.put(ProviderTableMeta.UPLOADS_IS_WIFI_ONLY, ocUpload.isUseWifiOnly() ? 1 : 0);
         cv.put(ProviderTableMeta.UPLOADS_FOLDER_UNLOCK_TOKEN, ocUpload.getFolderUnlockToken());
@@ -123,7 +124,7 @@ public class UploadsStorageManager extends Observable {
         );
 
         Log_OC.d(TAG, "updateUpload returns with: " + result + " for file: " + ocUpload.getLocalPath());
-        if (result != 1) {
+        if (result != SINGLE_RESULT) {
             Log_OC.e(TAG, "Failed to update item " + ocUpload.getLocalPath() + " into upload db.");
         } else {
             notifyObserversNow();
@@ -189,7 +190,7 @@ public class UploadsStorageManager extends Observable {
         );
 
         if (c != null) {
-            if (c.getCount() != 1) {
+            if (c.getCount() != SINGLE_RESULT) {
                 Log_OC.e(TAG, c.getCount() + " items for id=" + id
                         + " available in UploadDb. Expected 1. Failed to update upload db.");
             } else {
@@ -272,10 +273,10 @@ public class UploadsStorageManager extends Observable {
     }
 
     public OCUpload[] getAllStoredUploads() {
-        return getUploads(null, null);
+        return getUploads(null, (String[]) null);
     }
 
-    private OCUpload[] getUploads(@Nullable String selection, @Nullable String[] selectionArgs) {
+    private OCUpload[] getUploads(@Nullable String selection, @Nullable String... selectionArgs) {
         OCUpload[] list;
 
         Cursor c = getDB().query(
@@ -320,7 +321,7 @@ public class UploadsStorageManager extends Observable {
             upload.setUploadStatus(
                     UploadStatus.fromValue(c.getInt(c.getColumnIndex(ProviderTableMeta.UPLOADS_STATUS)))
             );
-            upload.setLocalAction(c.getInt(c.getColumnIndex((ProviderTableMeta.UPLOADS_LOCAL_BEHAVIOUR))));
+            upload.setLocalAction(c.getInt(c.getColumnIndex(ProviderTableMeta.UPLOADS_LOCAL_BEHAVIOUR)));
             upload.setForceOverwrite(c.getInt(
                     c.getColumnIndex(ProviderTableMeta.UPLOADS_FORCE_OVERWRITE)) == 1);
             upload.setCreateRemoteFolder(c.getInt(
@@ -363,7 +364,7 @@ public class UploadsStorageManager extends Observable {
      * Get all failed uploads.
      */
     public OCUpload[] getFailedUploads() {
-        return getUploads(ProviderTableMeta.UPLOADS_STATUS + "== ?" +
+        return getUploads("(" + ProviderTableMeta.UPLOADS_STATUS + "== ?" +
                 " OR " + ProviderTableMeta.UPLOADS_LAST_RESULT +
                         "==" + UploadResult.DELAYED_FOR_WIFI.getValue() +
                         " OR " + ProviderTableMeta.UPLOADS_LAST_RESULT +
@@ -371,7 +372,9 @@ public class UploadsStorageManager extends Observable {
                         " OR " + ProviderTableMeta.UPLOADS_LAST_RESULT +
                         "==" + UploadResult.DELAYED_FOR_CHARGING.getValue() +
                         " OR " + ProviderTableMeta.UPLOADS_LAST_RESULT +
-                        "==" + UploadResult.DELAYED_IN_POWER_SAVE_MODE.getValue()
+                        "==" + UploadResult.DELAYED_IN_POWER_SAVE_MODE.getValue() +
+                        " ) AND " + ProviderTableMeta.UPLOADS_LAST_RESULT +
+                        "!= " + UploadResult.VIRUS_DETECTED.getValue()
                 , new String[]{String.valueOf(UploadStatus.UPLOAD_FAILED.value)});
     }
 
@@ -391,7 +394,7 @@ public class UploadsStorageManager extends Observable {
      */
     public OCUpload[] getFinishedUploads() {
 
-        return getUploads(ProviderTableMeta.UPLOADS_STATUS + "==" + UploadStatus.UPLOAD_SUCCEEDED.value, null);
+        return getUploads(ProviderTableMeta.UPLOADS_STATUS + "==" + UploadStatus.UPLOAD_SUCCEEDED.value, (String[]) null);
     }
 
     public OCUpload[] getFailedButNotDelayedUploadsForCurrentAccount() {
@@ -430,7 +433,7 @@ public class UploadsStorageManager extends Observable {
                         "<>" + UploadResult.DELAYED_FOR_CHARGING.getValue() +
                         AND + ProviderTableMeta.UPLOADS_LAST_RESULT +
                         "<>" + UploadResult.DELAYED_IN_POWER_SAVE_MODE.getValue(),
-                null
+                (String[]) null
         );
     }
 

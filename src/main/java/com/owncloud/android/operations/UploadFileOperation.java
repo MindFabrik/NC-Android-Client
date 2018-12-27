@@ -25,6 +25,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
+import android.util.Log;
 
 import com.evernote.android.job.JobRequest;
 import com.evernote.android.job.util.Device;
@@ -111,23 +112,22 @@ public class UploadFileOperation extends SyncOperation {
      * (if forceOverwrite==false and remote file already exists).
      */
     private OCFile mOldFile;
-    private String mRemotePath = null;
+    private String mRemotePath;
     private String mFolderUnlockToken;
-    private boolean mChunked = false;
-    private boolean mRemoteFolderToBeCreated = false;
-    private boolean mForceOverwrite = false;
+    private boolean mRemoteFolderToBeCreated;
+    private boolean mForceOverwrite;
     private int mLocalBehaviour = FileUploader.LOCAL_BEHAVIOUR_COPY;
     private int mCreatedBy = CREATED_BY_USER;
-    private boolean mOnWifiOnly = false;
-    private boolean mWhileChargingOnly = false;
-    private boolean mIgnoringPowerSaveMode = false;
+    private boolean mOnWifiOnly;
+    private boolean mWhileChargingOnly;
+    private boolean mIgnoringPowerSaveMode;
 
-    private boolean mWasRenamed = false;
-    private long mOCUploadId = -1;
+    private boolean mWasRenamed;
+    private long mOCUploadId;
     /**
      * Local path to file which is to be uploaded (before any possible renaming or moving).
      */
-    private String mOriginalStoragePath = null;
+    private String mOriginalStoragePath;
     private Set<OnDatatransferProgressListener> mDataTransferListeners = new HashSet<>();
     private OnRenameListener mRenameUploadListener;
 
@@ -138,7 +138,7 @@ public class UploadFileOperation extends SyncOperation {
 
     private UploadRemoteFileOperation mUploadOperation;
 
-    protected RequestEntity mEntity = null;
+    protected RequestEntity mEntity;
 
     private Account mAccount;
     private OCUpload mUpload;
@@ -167,7 +167,7 @@ public class UploadFileOperation extends SyncOperation {
         // are checked when the UploadFileOperation instance is created
 
 
-        newFile.setMimetype(mimeType);
+        newFile.setMimeType(mimeType);
 
         return newFile;
     }
@@ -175,7 +175,6 @@ public class UploadFileOperation extends SyncOperation {
     public UploadFileOperation(Account account,
                                OCFile file,
                                OCUpload upload,
-                               boolean chunked,
                                boolean forceOverwrite,
                                int localBehaviour,
                                Context context,
@@ -208,28 +207,27 @@ public class UploadFileOperation extends SyncOperation {
         mOnWifiOnly = onWifiOnly;
         mWhileChargingOnly = whileChargingOnly;
         mRemotePath = upload.getRemotePath();
-        mChunked = chunked;
         mForceOverwrite = forceOverwrite;
         mLocalBehaviour = localBehaviour;
         mOriginalStoragePath = mFile.getStoragePath();
         mContext = context;
         mOCUploadId = upload.getUploadId();
-        mCreatedBy = upload.getCreadtedBy();
+        mCreatedBy = upload.getCreatedBy();
         mRemoteFolderToBeCreated = upload.isCreateRemoteFolder();
         // Ignore power save mode only if user explicitly created this upload
-        mIgnoringPowerSaveMode = (mCreatedBy == CREATED_BY_USER);
+        mIgnoringPowerSaveMode = mCreatedBy == CREATED_BY_USER;
         mFolderUnlockToken = upload.getFolderUnlockToken();
     }
 
-    public boolean getIsWifiRequired() {
+    public boolean isWifiRequired() {
         return mOnWifiOnly;
     }
 
-    public boolean getIsChargingRequired() {
+    public boolean isChargingRequired() {
         return mWhileChargingOnly;
     }
 
-    public boolean getIsIgnoringPowerSaveMode() { return mIgnoringPowerSaveMode; }
+    public boolean isIgnoringPowerSaveMode() { return mIgnoringPowerSaveMode; }
 
     public Account getAccount() {
         return mAccount;
@@ -268,7 +266,7 @@ public class UploadFileOperation extends SyncOperation {
     }
 
     public String getMimeType() {
-        return mFile.getMimetype();
+        return mFile.getMimeType();
     }
 
     public int getLocalBehaviour() {
@@ -342,10 +340,6 @@ public class UploadFileOperation extends SyncOperation {
         mRenameUploadListener = listener;
     }
 
-    public boolean isChunkedUploadSupported() {
-        return mChunked;
-    }
-
     public Context getContext() {
         return mContext;
     }
@@ -373,7 +367,7 @@ public class UploadFileOperation extends SyncOperation {
         OCFile parent = getStorageManager().getFileByPath(remoteParentPath);
 
         // in case of a fresh upload with subfolder, where parent does not exist yet
-        if (parent == null && mFolderUnlockToken.isEmpty()) {
+        if (parent == null && (mFolderUnlockToken == null || mFolderUnlockToken.isEmpty())) {
             // try to create folder
             RemoteOperationResult result = grantFolderExistence(remoteParentPath, client);
 
@@ -391,12 +385,12 @@ public class UploadFileOperation extends SyncOperation {
         // parent file is not null anymore:
         // - it was created on fresh upload or
         // - resume of encrypted upload, then parent file exists already as unlock is only for direct parent
-        
+
         mFile.setParentId(parent.getFileId());
 
         // try to unlock folder with stored token, e.g. when upload needs to be resumed or app crashed
         // the parent folder should exist as it is a resume of a broken upload
-        if (!mFolderUnlockToken.isEmpty()) {
+        if (mFolderUnlockToken != null && !mFolderUnlockToken.isEmpty()) {
             UnlockFileOperation unlockFileOperation = new UnlockFileOperation(parent.getLocalId(), mFolderUnlockToken);
             RemoteOperationResult unlockFileOperationResult = unlockFileOperation.execute(client, true);
 
@@ -442,7 +436,7 @@ public class UploadFileOperation extends SyncOperation {
         String publicKey = arbitraryDataProvider.getValue(getAccount().name, EncryptionUtils.PUBLIC_KEY);
 
         try {
-            // check conditions 
+            // check conditions
             result = checkConditions(originalFile);
 
             if (result != null) {
@@ -456,7 +450,7 @@ public class UploadFileOperation extends SyncOperation {
 
             if (lockFileOperationResult.isSuccess()) {
                 token = (String) lockFileOperationResult.getData().get(0);
-                // immediately store it 
+                // immediately store it
                 mUpload.setFolderUnlockToken(token);
                 uploadsStorageManager.updateUpload(mUpload);
             } else if (lockFileOperationResult.getHttpCode() == HttpStatus.SC_FORBIDDEN) {
@@ -579,13 +573,13 @@ public class UploadFileOperation extends SyncOperation {
             }
 
             /// perform the upload
-            if (mChunked && (size > ChunkedUploadRemoteFileOperation.CHUNK_SIZE)) {
+            if (size > ChunkedUploadRemoteFileOperation.CHUNK_SIZE) {
                 mUploadOperation = new ChunkedUploadRemoteFileOperation(mContext, encryptedTempFile.getAbsolutePath(),
-                        mFile.getParentRemotePath() + encryptedFileName, mFile.getMimetype(),
+                        mFile.getParentRemotePath() + encryptedFileName, mFile.getMimeType(),
                         mFile.getEtagInConflict(), timeStamp);
             } else {
                 mUploadOperation = new UploadRemoteFileOperation(encryptedTempFile.getAbsolutePath(),
-                        mFile.getParentRemotePath() + encryptedFileName, mFile.getMimetype(),
+                        mFile.getParentRemotePath() + encryptedFileName, mFile.getMimeType(),
                         mFile.getEtagInConflict(), timeStamp);
             }
 
@@ -611,7 +605,7 @@ public class UploadFileOperation extends SyncOperation {
                 DecryptedFolderMetadata.DecryptedFile decryptedFile = new DecryptedFolderMetadata.DecryptedFile();
                 DecryptedFolderMetadata.Data data = new DecryptedFolderMetadata.Data();
                 data.setFilename(mFile.getFileName());
-                data.setMimetype(mFile.getMimetype());
+                data.setMimetype(mFile.getMimeType());
                 data.setKey(EncryptionUtils.encodeBytesToBase64String(key));
 
                 decryptedFile.setEncrypted(data);
@@ -705,12 +699,10 @@ public class UploadFileOperation extends SyncOperation {
 
     private RemoteOperationResult unlockFolder(OCFile parentFolder, OwnCloudClient client, String token) {
         if (token != null) {
-            UnlockFileOperation unlockFileOperation = new UnlockFileOperation(parentFolder.getLocalId(), token);
-            RemoteOperationResult unlockFileOperationResult = unlockFileOperation.execute(client, true);
-
-            return unlockFileOperationResult;
-        } else
+            return new UnlockFileOperation(parentFolder.getLocalId(), token).execute(client, true);
+        } else {
             return new RemoteOperationResult(new Exception("No token available"));
+        }
     }
 
     private RemoteOperationResult checkConditions(File originalFile) {
@@ -729,8 +721,8 @@ public class UploadFileOperation extends SyncOperation {
         }
 
         // check if charging conditions are met and delays the upload otherwise
-        if (mWhileChargingOnly && (!Device.getBatteryStatus(mContext).isCharging() && Device.getBatteryStatus(mContext)
-                .getBatteryPercent() < 1)) {
+        if (mWhileChargingOnly && !Device.getBatteryStatus(mContext).isCharging()
+                && Device.getBatteryStatus(mContext).getBatteryPercent() < 1) {
             Log_OC.d(TAG, "Upload delayed until the device is charging: " + getRemotePath());
             remoteOperationResult =  new RemoteOperationResult(ResultCode.DELAYED_FOR_CHARGING);
         }
@@ -820,12 +812,12 @@ public class UploadFileOperation extends SyncOperation {
             }
 
             // perform the upload
-            if (mChunked && (size > ChunkedUploadRemoteFileOperation.CHUNK_SIZE)) {
+            if (size > ChunkedUploadRemoteFileOperation.CHUNK_SIZE) {
                 mUploadOperation = new ChunkedUploadRemoteFileOperation(mContext, mFile.getStoragePath(),
-                        mFile.getRemotePath(), mFile.getMimetype(), mFile.getEtagInConflict(), timeStamp);
+                        mFile.getRemotePath(), mFile.getMimeType(), mFile.getEtagInConflict(), timeStamp);
             } else {
                 mUploadOperation = new UploadRemoteFileOperation(mFile.getStoragePath(),
-                        mFile.getRemotePath(), mFile.getMimetype(), mFile.getEtagInConflict(), timeStamp);
+                        mFile.getRemotePath(), mFile.getMimeType(), mFile.getEtagInConflict(), timeStamp);
             }
 
             Iterator<OnDatatransferProgressListener> listener = mDataTransferListeners.iterator();
@@ -983,7 +975,7 @@ public class UploadFileOperation extends SyncOperation {
                 try {
                     move(originalFile, newFile);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "Error moving file", e);
                 }
                 getStorageManager().deleteFileInMediaScan(originalFile.getAbsolutePath());
                 mFile.setStoragePath(newFile.getAbsolutePath());
@@ -1035,7 +1027,7 @@ public class UploadFileOperation extends SyncOperation {
         }
         if (parent != null) {
             OCFile createdFolder = new OCFile(remotePath);
-            createdFolder.setMimetype(MimeType.DIRECTORY);
+            createdFolder.setMimeType(MimeType.DIRECTORY);
             createdFolder.setParentId(parent.getFileId());
             getStorageManager().saveFile(createdFolder);
             return createdFolder;
@@ -1055,7 +1047,7 @@ public class UploadFileOperation extends SyncOperation {
         OCFile newFile = new OCFile(newRemotePath);
         newFile.setCreationTimestamp(mFile.getCreationTimestamp());
         newFile.setFileLength(mFile.getFileLength());
-        newFile.setMimetype(mFile.getMimetype());
+        newFile.setMimeType(mFile.getMimeType());
         newFile.setModificationTimestamp(mFile.getModificationTimestamp());
         newFile.setModificationTimestampAtLastSyncForData(
                 mFile.getModificationTimestampAtLastSyncForData()
@@ -1173,7 +1165,7 @@ public class UploadFileOperation extends SyncOperation {
 
         RemoteOperationResult result = null;
 
-        if (FileStorageUtils.getUsableSpace(mAccount.name) < sourceFile.length()) {
+        if (FileStorageUtils.getUsableSpace() < sourceFile.length()) {
             result = new RemoteOperationResult(ResultCode.LOCAL_STORAGE_FULL);
             return result;  // error condition when the file should be copied
 
@@ -1340,7 +1332,7 @@ public class UploadFileOperation extends SyncOperation {
             // coincidence; nothing else is needed, the storagePath is right
             // in the instance returned by mCurrentUpload.getFile()
         }
-        file.setNeedsUpdateThumbnail(true);
+        file.setUpdateThumbnailNeeded(true);
         getStorageManager().saveFile(file);
         getStorageManager().saveConflict(file, null);
 
@@ -1355,7 +1347,7 @@ public class UploadFileOperation extends SyncOperation {
     private void updateOCFile(OCFile file, RemoteFile remoteFile) {
         file.setCreationTimestamp(remoteFile.getCreationTimestamp());
         file.setFileLength(remoteFile.getLength());
-        file.setMimetype(remoteFile.getMimeType());
+        file.setMimeType(remoteFile.getMimeType());
         file.setModificationTimestamp(remoteFile.getModifiedTimestamp());
         file.setModificationTimestampAtLastSyncForData(remoteFile.getModifiedTimestamp());
         file.setEtag(remoteFile.getEtag());

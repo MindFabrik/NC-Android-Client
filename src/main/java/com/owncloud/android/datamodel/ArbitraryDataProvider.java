@@ -29,14 +29,14 @@ import android.net.Uri;
 import com.owncloud.android.db.ProviderMeta;
 import com.owncloud.android.lib.common.utils.Log_OC;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Database provider for handling the persistence aspects of arbitrary data table.
  */
-
 public class ArbitraryDataProvider {
-    static private final String TAG = ArbitraryDataProvider.class.getSimpleName();
+    private static final String TAG = ArbitraryDataProvider.class.getSimpleName();
+    private static final String TRUE = "true";
 
     private ContentResolver contentResolver;
 
@@ -56,7 +56,7 @@ public class ArbitraryDataProvider {
         );
     }
 
-    public int deleteForKeyWhereAccountNotIn(ArrayList<String> accounts, String key) {
+    public int deleteForKeyWhereAccountNotIn(List<String> accounts, String key) {
         return contentResolver.delete(
                 ProviderMeta.ProviderTableMeta.CONTENT_URI_ARBITRARY_DATA,
                 ProviderMeta.ProviderTableMeta.ARBITRARY_DATA_CLOUD_ID + " NOT IN (?) AND " +
@@ -116,9 +116,7 @@ public class ArbitraryDataProvider {
     }
 
     public boolean getBooleanValue(String accountName, String key) {
-        String value = getValue(accountName, key);
-
-        return !value.isEmpty() && value.equalsIgnoreCase("true");
+        return TRUE.equalsIgnoreCase(getValue(accountName, key));
     }
 
     public boolean getBooleanValue(Account account, String key) {
@@ -178,6 +176,7 @@ public class ArbitraryDataProvider {
                 if (value == null) {
                     Log_OC.e(TAG, "Arbitrary value could not be created from cursor");
                 } else {
+                    cursor.close();
                     return value;
                 }
             }

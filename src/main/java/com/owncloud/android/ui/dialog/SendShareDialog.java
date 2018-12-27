@@ -16,11 +16,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.owncloud.android.R;
 import com.owncloud.android.datamodel.OCFile;
 import com.owncloud.android.lib.common.utils.Log_OC;
+import com.owncloud.android.ui.activity.FileActivity;
+import com.owncloud.android.ui.activity.FileDisplayActivity;
 import com.owncloud.android.ui.adapter.SendButtonAdapter;
 import com.owncloud.android.ui.components.SendButtonData;
 import com.owncloud.android.ui.helpers.FileOperationsHelper;
@@ -34,8 +37,10 @@ import java.util.List;
  * Nextcloud Android client application
  *
  * @author Tobias Kaminsky
+ * @author Andy Scherzinger
  * Copyright (C) 2017 Tobias Kaminsky
  * Copyright (C) 2017 Nextcloud GmbH.
+ * Copyright (C) 2018 Andy Scherzinger
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -53,20 +58,26 @@ import java.util.List;
 public class SendShareDialog extends BottomSheetDialogFragment {
 
     private static final String KEY_OCFILE = "KEY_OCFILE";
+    private static final String KEY_SHARING_PUBLIC_PASSWORD_ENFORCED = "KEY_SHARING_PUBLIC_PASSWORD_ENFORCED";
+    private static final String KEY_HIDE_NCSHARING_OPTIONS = "KEY_HIDE_NCSHARING_OPTIONS";
     private static final String TAG = SendShareDialog.class.getSimpleName();
     public static final String PACKAGE_NAME = "PACKAGE_NAME";
     public static final String ACTIVITY_NAME = "ACTIVITY_NAME";
 
     private View view;
     private OCFile file;
+    private boolean hideNcSharingOptions;
+    private boolean sharingPublicPasswordEnforced;
     private FileOperationsHelper fileOperationsHelper;
 
-    public static SendShareDialog newInstance(OCFile file) {
+    public static SendShareDialog newInstance(OCFile file, boolean hideNcSharingOptions, boolean sharingPublicPasswordEnforced) {
 
         SendShareDialog dialogFragment = new SendShareDialog();
 
         Bundle args = new Bundle();
         args.putParcelable(KEY_OCFILE, file);
+        args.putBoolean(KEY_HIDE_NCSHARING_OPTIONS, hideNcSharingOptions);
+        args.putBoolean(KEY_SHARING_PUBLIC_PASSWORD_ENFORCED, sharingPublicPasswordEnforced);
         dialogFragment.setArguments(args);
 
         return dialogFragment;
@@ -78,9 +89,9 @@ public class SendShareDialog extends BottomSheetDialogFragment {
         // keep the state of the fragment on configuration changes
         setRetainInstance(true);
 
-        view = null;
-
         file = getArguments().getParcelable(KEY_OCFILE);
+        hideNcSharingOptions = getArguments().getBoolean(KEY_HIDE_NCSHARING_OPTIONS, false);
+        sharingPublicPasswordEnforced = getArguments().getBoolean(KEY_SHARING_PUBLIC_PASSWORD_ENFORCED, false);
     }
 
     @Nullable
@@ -88,6 +99,9 @@ public class SendShareDialog extends BottomSheetDialogFragment {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
         view = inflater.inflate(R.layout.send_share_fragment, container, false);
+
+        LinearLayout sendShareButtons = view.findViewById(R.id.send_share_buttons);
+        View divider = view.findViewById(R.id.divider);
 
         // Share with people
         TextView sharePeopleText = view.findViewById(R.id.share_people_button);
@@ -99,13 +113,16 @@ public class SendShareDialog extends BottomSheetDialogFragment {
 
         // Share via link button
         TextView shareLinkText = view.findViewById(R.id.share_link_button);
-        shareLinkText.setOnClickListener(v -> shareFile(file));
+        shareLinkText.setOnClickListener(v -> shareByLink());
 
         ImageView shareLinkImageView = view.findViewById(R.id.share_link_icon);
         themeShareButtonImage(shareLinkImageView);
-        shareLinkImageView.setOnClickListener(v -> shareFile(file));
+        shareLinkImageView.setOnClickListener(v -> shareByLink());
 
-        if (file.isSharedWithMe() && !file.canReshare()) {
+        if (hideNcSharingOptions) {
+            sendShareButtons.setVisibility(View.GONE);
+            divider.setVisibility(View.GONE);
+        } else if (file.isSharedWithMe() && !file.canReshare()) {
             showResharingNotAllowedSnackbar();
 
             if (file.isFolder()) {
@@ -131,7 +148,7 @@ public class SendShareDialog extends BottomSheetDialogFragment {
 
         List<SendButtonData> sendButtonDataList = setupSendButtonData(sendIntent);
 
-        if (getContext().getString(R.string.send_files_to_other_apps).equalsIgnoreCase("off")) {
+        if ("off".equalsIgnoreCase(getContext().getString(R.string.send_files_to_other_apps))) {
             sharePeopleText.setVisibility(View.GONE);
         }
 
@@ -145,9 +162,29 @@ public class SendShareDialog extends BottomSheetDialogFragment {
         return view;
     }
 
+    private void shareByLink() {
+        if (file.isSharedViaLink()) {
+            ((FileActivity) getActivity()).getFileOperationsHelper().getFileWithLink(file);
+        } else if (sharingPublicPasswordEnforced) {
+            // password enforced by server, request to the user before trying to create
+            requestPasswordForShareViaLink();
+        } else {
+            // create without password if not enforced by server or we don't know if enforced;
+            ((FileActivity) getActivity()).getFileOperationsHelper().shareFileViaLink(file, null);
+        }
+
+        this.dismiss();
+    }
+
+    private void requestPasswordForShareViaLink() {
+        SharePasswordDialogFragment dialog = SharePasswordDialogFragment.newInstance(file, true);
+        dialog.show(getFragmentManager(), SharePasswordDialogFragment.PASSWORD_FRAGMENT);
+    }
+
     private void themeShareButtonImage(ImageView shareImageView) {
-        shareImageView.getBackground().setColorFilter(ThemeUtils.elementColor(), PorterDuff.Mode.SRC_IN);
-        shareImageView.getDrawable().mutate().setColorFilter(ThemeUtils.fontColor(), PorterDuff.Mode.SRC_IN);
+        shareImageView.getBackground().setColorFilter(ThemeUtils.elementColor(getContext()), PorterDuff.Mode.SRC_IN);
+        shareImageView.getDrawable().mutate().setColorFilter(ThemeUtils.fontColor(getContext()),
+                PorterDuff.Mode.SRC_IN);
     }
 
     private void showResharingNotAllowedSnackbar() {
@@ -208,14 +245,18 @@ public class SendShareDialog extends BottomSheetDialogFragment {
     @NonNull
     private Intent createSendIntent() {
         Intent sendIntent = new Intent(Intent.ACTION_SEND);
-        sendIntent.setType(file.getMimetype());
+        sendIntent.setType(file.getMimeType());
         sendIntent.putExtra(Intent.EXTRA_STREAM, file.getExposedFileUri(getActivity()));
         sendIntent.putExtra(Intent.ACTION_SEND, true);
         return sendIntent;
     }
 
     private void shareFile(OCFile file) {
-        fileOperationsHelper.showShareFile(file);
+        if (getActivity() instanceof FileDisplayActivity) {
+            ((FileDisplayActivity) getActivity()).showDetails(file, 1);
+        } else {
+            fileOperationsHelper.showShareFile(file);
+        }
         dismiss();
     }
 

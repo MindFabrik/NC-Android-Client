@@ -34,7 +34,6 @@ import android.support.v7.app.ActionBar;
 import android.view.MenuItem;
 import android.view.View;
 
-import com.ortiz.touch.ExtendedViewPager;
 import com.owncloud.android.MainApp;
 import com.owncloud.android.R;
 import com.owncloud.android.authentication.AccountUtils;
@@ -74,15 +73,12 @@ public class PreviewImageActivity extends FileActivity implements
 
     public static final String EXTRA_VIRTUAL_TYPE = "EXTRA_VIRTUAL_TYPE";
 
-    private ExtendedViewPager mViewPager;
+    private ViewPager mViewPager;
     private PreviewImagePagerAdapter mPreviewImagePagerAdapter;
-    private int mSavedPosition = 0;
-    private boolean mHasSavedPosition = false;
-    
+    private int mSavedPosition;
+    private boolean mHasSavedPosition;
     private boolean mRequestWaitingForBinder;
-    
     private DownloadFinishReceiver mDownloadFinishReceiver;
-    
     private View mFullScreenAnchorView;
 
     @Override
@@ -107,17 +103,14 @@ public class PreviewImageActivity extends FileActivity implements
         mFullScreenAnchorView = getWindow().getDecorView();
         // to keep our UI controls visibility in line with system bars visibility
         mFullScreenAnchorView.setOnSystemUiVisibilityChangeListener
-                (new View.OnSystemUiVisibilityChangeListener() {
-                    @Override
-                    public void onSystemUiVisibilityChange(int flags) {
-                        boolean visible = (flags & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0;
-                        if (visible) {
-                            actionBar.show();
-                            setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
-                        } else {
-                            actionBar.hide();
-                            setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-                        }
+                (flags -> {
+                    boolean visible = (flags & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0;
+                    if (visible) {
+                        actionBar.show();
+                        setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+                    } else {
+                        actionBar.hide();
+                        setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
                     }
                 });
          
@@ -152,10 +145,10 @@ public class PreviewImageActivity extends FileActivity implements
         mViewPager = findViewById(R.id.fragmentPager);
 
         int position = mHasSavedPosition ? mSavedPosition : mPreviewImagePagerAdapter.getFilePosition(getFile());
-        position = (position >= 0) ? position : 0;
+        position = position >= 0 ? position : 0;
 
         mViewPager.setAdapter(mPreviewImagePagerAdapter);
-        mViewPager.setOnPageChangeListener(this);
+        mViewPager.addOnPageChangeListener(this);
         mViewPager.setCurrentItem(position);
 
         if (position == 0 && !getFile().isDown()) {
@@ -174,7 +167,7 @@ public class PreviewImageActivity extends FileActivity implements
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putBoolean(KEY_WAITING_FOR_BINDER, mRequestWaitingForBinder);
-        outState.putBoolean(KEY_SYSTEM_VISIBLE, getSystemUIVisible());
+        outState.putBoolean(KEY_SYSTEM_VISIBLE, isSystemUIVisible());
     }
 
     @Override
@@ -220,8 +213,6 @@ public class PreviewImageActivity extends FileActivity implements
                     FileUploader.class))) {
                 Log_OC.d(TAG, "Upload service connected");
                 mUploaderBinder = (FileUploaderBinder) service;
-            } else {
-                return;
             }
             
         }
@@ -316,6 +307,11 @@ public class PreviewImageActivity extends FileActivity implements
         showDetailsIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(showDetailsIntent);
         finish();
+    }
+
+    @Override
+    public void showDetails(OCFile file, int activeTab) {
+        showDetails(file);
     }
 
     public void requestForDownload(OCFile file) {
@@ -425,18 +421,13 @@ public class PreviewImageActivity extends FileActivity implements
                 } else {
                     Log_OC.d(TAG, "Download finished, but the fragment is offscreen");
                 }
-                
             }
             removeStickyBroadcast(intent);
         }
-
     }
 
-    public boolean getSystemUIVisible() {
-        if (getSupportActionBar() != null) {
-            return (getSupportActionBar().isShowing());
-        }
-        return true;
+    public boolean isSystemUIVisible() {
+        return getSupportActionBar() == null || getSupportActionBar().isShowing();
     }
 
     public void toggleFullScreen() {

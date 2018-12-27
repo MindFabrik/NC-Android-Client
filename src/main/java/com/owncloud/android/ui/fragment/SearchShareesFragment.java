@@ -26,6 +26,7 @@ import android.app.Activity;
 import android.app.SearchManager;
 import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.SearchView;
 import android.view.LayoutInflater;
@@ -41,9 +42,8 @@ import com.owncloud.android.lib.common.utils.Log_OC;
 import com.owncloud.android.lib.resources.shares.OCShare;
 import com.owncloud.android.ui.activity.FileActivity;
 import com.owncloud.android.ui.adapter.ShareUserListAdapter;
-import com.owncloud.android.utils.AnalyticsUtils;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Fragment for Searching sharees (users and groups)
@@ -64,14 +64,12 @@ public class SearchShareesFragment extends Fragment implements ShareUserListAdap
     private static final String ARG_FILE = "FILE";
     private static final String ARG_ACCOUNT = "ACCOUNT";
 
-    private static final String SCREEN_NAME = "Sharee search";
-
     // Parameters
     private OCFile mFile;
     private Account mAccount;
 
     // other members
-    private ArrayList<OCShare> mShares;
+    private List<OCShare> mShares;
     private ShareFragmentListener mListener;
 
 
@@ -104,20 +102,11 @@ public class SearchShareesFragment extends Fragment implements ShareUserListAdap
 
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (getActivity() != null) {
-            AnalyticsUtils.setCurrentScreenName(getActivity(), SCREEN_NAME, TAG);
-        }
-    }
-
     /**
      * {@inheritDoc}
      */
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.search_users_groups_layout, container, false);
 

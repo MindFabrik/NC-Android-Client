@@ -32,14 +32,19 @@ import java.util.Random;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
-public class NotificationUtils {
+public final class NotificationUtils {
 
+    public static final String NOTIFICATION_CHANNEL_GENERAL = "NOTIFICATION_CHANNEL_GENERAL";
     public static final String NOTIFICATION_CHANNEL_DOWNLOAD = "NOTIFICATION_CHANNEL_DOWNLOAD";
     public static final String NOTIFICATION_CHANNEL_UPLOAD = "NOTIFICATION_CHANNEL_UPLOAD";
     public static final String NOTIFICATION_CHANNEL_MEDIA = "NOTIFICATION_CHANNEL_MEDIA";
     public static final String NOTIFICATION_CHANNEL_FILE_SYNC = "NOTIFICATION_CHANNEL_FILE_SYNC";
     public static final String NOTIFICATION_CHANNEL_FILE_OBSERVER = "NOTIFICATION_CHANNEL_FILE_OBSERVER";
     public static final String NOTIFICATION_CHANNEL_PUSH = "NOTIFICATION_CHANNEL_PUSH";
+
+    private NotificationUtils() {
+        // utility class -> private constructor
+    }
 
     /**
      * Factory method for {@link android.support.v4.app.NotificationCompat.Builder} instances.
@@ -57,15 +62,12 @@ public class NotificationUtils {
      * @return              An instance of the regular {@link NotificationCompat.Builder}.
      */
     public static NotificationCompat.Builder newNotificationBuilder(Context context) {
-        return new NotificationCompat.Builder(context).
-                setColor(ThemeUtils.primaryColor());
+        return new NotificationCompat.Builder(context).setColor(ThemeUtils.primaryColor(context));
     }
 
     @SuppressFBWarnings("DMI")
-    public static void cancelWithDelay(
-            final NotificationManager notificationManager,
-            final int notificationId,
-            long delayInMillis) {
+    public static void cancelWithDelay(final NotificationManager notificationManager, final int notificationId,
+                                       long delayInMillis) {
     
         HandlerThread thread = new HandlerThread(
                 "NotificationDelayerThread_" + (new Random(System.currentTimeMillis())).nextInt(),

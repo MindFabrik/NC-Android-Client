@@ -8,6 +8,6 @@ public final class BuildConfig {
   public static final String APPLICATION_ID = "de.mindfabrik.nextcloud.mfdev";
   public static final String BUILD_TYPE = "debug";
   public static final String FLAVOR = "generic";
-  public static final int VERSION_CODE = 30039099;
-  public static final String VERSION_NAME = "3.2.190";
+  public static final int VERSION_CODE = 30041090;
+  public static final String VERSION_NAME = "3.4.10";
 }

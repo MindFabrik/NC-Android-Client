@@ -1,29 +1,31 @@
-/**
+/*
  * Nextcloud Android client application
  *
  * @author Tobias Kaminsky
  * Copyright (C) 2017 Tobias Kaminsky
  * Copyright (C) 2017 Nextcloud GmbH.
- * <p>
+ *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
- * at your option) any later version.
- * <p>
+ * (at your option) any later version.
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * <p>
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package com.owncloud.android.ui.activity;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
 import android.view.MenuItem;
 import android.view.Window;
 import android.webkit.WebChromeClient;
@@ -36,42 +38,51 @@ import com.owncloud.android.MainApp;
 import com.owncloud.android.R;
 import com.owncloud.android.lib.common.utils.Log_OC;
 import com.owncloud.android.utils.DisplayUtils;
+import com.owncloud.android.utils.ThemeUtils;
 
 import java.io.InputStream;
 
 /**
  * This activity shows an URL as a web view
  */
-
 public class ExternalSiteWebView extends FileActivity {
     public static final String EXTRA_TITLE = "TITLE";
     public static final String EXTRA_URL = "URL";
     public static final String EXTRA_SHOW_SIDEBAR = "SHOW_SIDEBAR";
     public static final String EXTRA_MENU_ITEM_ID = "MENU_ITEM_ID";
+    public static final String EXTRA_TEMPLATE = "TEMPLATE";
 
     private static final String TAG = ExternalSiteWebView.class.getSimpleName();
 
-    private boolean showSidebar = false;
+    private boolean showSidebar;
+    protected boolean showToolbar = true;
     private int menuItemId;
-    private WebView webview;
+    protected WebView webview;
+    protected int webViewLayout = R.layout.externalsite_webview;
+    String url;
 
+    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log_OC.v(TAG, "onCreate() start");
 
         Bundle extras = getIntent().getExtras();
         String title = extras.getString(EXTRA_TITLE);
-        String url = extras.getString(EXTRA_URL);
+        url = extras.getString(EXTRA_URL);
         menuItemId = extras.getInt(EXTRA_MENU_ITEM_ID);
         showSidebar = extras.getBoolean(EXTRA_SHOW_SIDEBAR);
 
         // show progress
-        getWindow().requestFeature(Window.FEATURE_PROGRESS);
+        Window window = getWindow();
+        if (window != null) {
+            window.requestFeature(Window.FEATURE_PROGRESS);
+        }
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.externalsite_webview);
 
-        webview = (WebView) findViewById(R.id.webView);
+        setContentView(webViewLayout);
+
+        webview = findViewById(R.id.webView);
         final WebSettings webSettings = webview.getSettings();
 
         webview.setFocusable(true);
@@ -79,7 +90,9 @@ public class ExternalSiteWebView extends FileActivity {
         webview.setClickable(true);
 
         // setup toolbar
-        setupToolbar();
+        if (showToolbar) {
+            setupToolbar();
+        }
 
         // setup drawer
         setupDrawer(menuItemId);
@@ -88,8 +101,16 @@ public class ExternalSiteWebView extends FileActivity {
             setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
         }
 
-        getSupportActionBar().setTitle(title);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            ThemeUtils.setColoredTitle(actionBar, title, this);
+
+            if (showSidebar) {
+                actionBar.setDisplayHomeAsUpEnabled(true);
+            } else {
+                setDrawerIndicatorEnabled(false);
+            }
+        }
 
         // enable zoom
         webSettings.setSupportZoom(true);
@@ -114,13 +135,15 @@ public class ExternalSiteWebView extends FileActivity {
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
 
-        final ProgressBar progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        final ProgressBar progressBar = findViewById(R.id.progressBar);
 
-        webview.setWebChromeClient(new WebChromeClient() {
-            public void onProgressChanged(WebView view, int progress) {
-                progressBar.setProgress(progress * 1000);
-            }
-        });
+        if (progressBar != null) {
+            webview.setWebChromeClient(new WebChromeClient() {
+                public void onProgressChanged(WebView view, int progress) {
+                    progressBar.setProgress(progress * 1000);
+                }
+            });
+        }
 
         webview.setWebViewClient(new WebViewClient() {
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
@@ -148,8 +171,7 @@ public class ExternalSiteWebView extends FileActivity {
                         openDrawer();
                     }
                 } else {
-                    Intent settingsIntent = new Intent(getApplicationContext(), Preferences.class);
-                    startActivity(settingsIntent);
+                    finish();
                 }
             retval = true;
             break;

@@ -3,16 +3,16 @@
  *
  * @author David A. Velasco
  * Copyright (C) 2016 ownCloud Inc.
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
  * as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -28,6 +28,7 @@ import com.owncloud.android.datamodel.ArbitraryDataProvider;
 import com.owncloud.android.datamodel.FileDataStorageManager;
 import com.owncloud.android.datamodel.OCFile;
 import com.owncloud.android.ui.activity.ComponentsGetter;
+import com.owncloud.android.ui.activity.Preferences;
 import com.owncloud.android.utils.FileSortOrder;
 
 import static com.owncloud.android.ui.fragment.OCFileListFragment.FOLDER_LAYOUT_LIST;
@@ -35,16 +36,18 @@ import static com.owncloud.android.ui.fragment.OCFileListFragment.FOLDER_LAYOUT_
 /**
  * Helper to simplify reading of Preferences all around the app
  */
-public abstract class PreferenceManager {
+public final class PreferenceManager {
     /**
      * Constant to access value of last path selected by the user to upload a file shared from other app.
      * Value handled by the app without direct access in the UI.
      */
     private static final String AUTO_PREF__LAST_UPLOAD_PATH = "last_upload_path";
+    private static final String AUTO_PREF__UPLOAD_FROM_LOCAL_LAST_PATH = "upload_from_local_last_path";
     private static final String AUTO_PREF__UPLOAD_FILE_EXTENSION_MAP_URL = "prefs_upload_file_extension_map_url";
     private static final String AUTO_PREF__UPLOAD_FILE_EXTENSION_URL = "prefs_upload_file_extension_url";
     private static final String AUTO_PREF__UPLOADER_BEHAVIOR = "prefs_uploader_behaviour";
     private static final String AUTO_PREF__GRID_COLUMNS = "grid_columns";
+    public static final String AUTO_PREF__LAST_SEEN_VERSION_CODE = "lastSeenVersionCode";
     private static final String PREF__INSTANT_UPLOADING = "instant_uploading";
     private static final String PREF__INSTANT_VIDEO_UPLOADING = "instant_video_uploading";
     private static final String PREF__INSTANT_UPLOAD_PATH_USE_SUBFOLDERS = "instant_upload_path_use_subfolders";
@@ -62,7 +65,10 @@ public abstract class PreferenceManager {
     private static final String PREF__AUTO_UPLOAD_INIT = "autoUploadInit";
     private static final String PREF__FOLDER_SORT_ORDER = "folder_sort_order";
     private static final String PREF__FOLDER_LAYOUT = "folder_layout";
-    private static final String KEY_FAB_EVER_CLICKED = "FAB_EVER_CLICKED";
+    public static final String PREF__LOCK_TIMESTAMP = "lock_timestamp";
+
+    private PreferenceManager() {
+    }
 
     public static void setKeysReInit(Context context) {
         saveBooleanPreference(context, PREF__KEYS_REINIT, true);
@@ -115,14 +121,6 @@ public abstract class PreferenceManager {
 
     public static boolean showHiddenFilesEnabled(Context context) {
         return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("show_hidden_files_pref", false);
-    }
-
-    public static long getFABClicked(Context context) {
-        return getDefaultSharedPreferences(context).getLong(KEY_FAB_EVER_CLICKED, 0);
-    }
-
-    public static void setFABClicked(Context context) {
-        getDefaultSharedPreferences(context).edit().putLong(KEY_FAB_EVER_CLICKED, 1).apply();
     }
 
     /**
@@ -191,11 +189,52 @@ public abstract class PreferenceManager {
     }
 
     /**
+     * Gets the last local path where the user selected to do an upload from.
+     *
+     * @param context Caller {@link Context}, used to access to shared preferences manager.
+     * @return path     Absolute path to a folder, as previously stored by
+     * {@link #setUploadFromLocalLastPath(Context, String)}, or empty String if never saved before.
+     */
+    public static String getUploadFromLocalLastPath(Context context) {
+        return getDefaultSharedPreferences(context).getString(AUTO_PREF__UPLOAD_FROM_LOCAL_LAST_PATH, "");
+    }
+
+    /**
+     * Saves the path where the user selected to do the last local upload of a file from.
+     *
+     * @param context Caller {@link Context}, used to access to shared preferences manager.
+     * @param path    Absolute path to a folder.
+     */
+    public static void setUploadFromLocalLastPath(Context context, String path) {
+        saveStringPreference(context, AUTO_PREF__UPLOAD_FROM_LOCAL_LAST_PATH, path);
+    }
+
+    /**
+     * Gets the lock preference configured by the user.
+     *
+     * @param context Caller {@link Context}, used to access to shared preferences manager.
+     * @return lock     lock preference value.
+     */
+    public static String getLockPreference(Context context) {
+        return getDefaultSharedPreferences(context).getString(Preferences.PREFERENCE_LOCK, "");
+    }
+
+    /**
+     * Gets the lock via fingerprint preference configured by the user.
+     *
+     * @param context Caller {@link Context}, used to access to shared preferences manager.
+     * @return useFingerprint     is lock via fingerprint preference.
+     */
+    public static boolean isUseFingerprint(Context context) {
+        return getDefaultSharedPreferences(context).getBoolean(Preferences.PREFERENCE_USE_FINGERPRINT, false);
+    }
+
+    /**
      * Get preferred folder display type.
      *
      * @param context Caller {@link Context}, used to access to preferences manager.
      * @param folder Folder
-     * @return preference value, default is 
+     * @return preference value, default is
      * {@link com.owncloud.android.ui.fragment.OCFileListFragment#FOLDER_LAYOUT_LIST}
      */
     public static String getFolderLayout(Context context, OCFile folder) {
@@ -219,19 +258,57 @@ public abstract class PreferenceManager {
      * @param context Caller {@link Context}, used to access to shared preferences manager.
      * @return sort order     the sort order, default is {@link FileSortOrder#sort_a_to_z} (sort by name)
      */
-    public static FileSortOrder getSortOrder(Context context, OCFile folder) {
+    public static FileSortOrder getSortOrderByFolder(Context context, OCFile folder) {
         return FileSortOrder.sortOrders.get(getFolderPreference(context, PREF__FOLDER_SORT_ORDER, folder,
-                FileSortOrder.sort_a_to_z.mName));
+            FileSortOrder.sort_a_to_z.name));
     }
 
     /**
      * Set preferred folder sort order.
      *
-     * @param context Caller {@link Context}, used to access to shared preferences manager.
-     * @param sortOrder   the sort order
+     * @param context   Caller {@link Context}, used to access to shared preferences manager.
+     * @param sortOrder the sort order
      */
     public static void setSortOrder(Context context, OCFile folder, FileSortOrder sortOrder) {
-        setFolderPreference(context, PREF__FOLDER_SORT_ORDER, folder, sortOrder.mName);
+        setFolderPreference(context, PREF__FOLDER_SORT_ORDER, folder, sortOrder.name);
+    }
+
+    public static FileSortOrder getSortOrderByType(Context context, FileSortOrder.Type type) {
+        return getSortOrderByType(context, type, FileSortOrder.sort_a_to_z);
+    }
+
+    /**
+     * Get preferred folder sort order.
+     *
+     * @param context Caller {@link Context}, used to access to shared preferences manager.
+     * @return sort order     the sort order, default is {@link FileSortOrder#sort_a_to_z} (sort by name)
+     */
+    public static FileSortOrder getSortOrderByType(Context context, FileSortOrder.Type type,
+                                                   FileSortOrder defaultOrder) {
+        Account account = AccountUtils.getCurrentOwnCloudAccount(context);
+
+        if (account == null) {
+            return defaultOrder;
+        }
+
+        ArbitraryDataProvider dataProvider = new ArbitraryDataProvider(context.getContentResolver());
+
+        String value = dataProvider.getValue(account.name, PREF__FOLDER_SORT_ORDER + "_" + type);
+
+        return value.isEmpty() ? defaultOrder : FileSortOrder.sortOrders.get(value);
+    }
+
+    /**
+     * Set preferred folder sort order.
+     *
+     * @param context   Caller {@link Context}, used to access to shared preferences manager.
+     * @param sortOrder the sort order
+     */
+    public static void setSortOrder(Context context, FileSortOrder.Type type, FileSortOrder sortOrder) {
+        Account account = AccountUtils.getCurrentOwnCloudAccount(context);
+        ArbitraryDataProvider dataProvider = new ArbitraryDataProvider(context.getContentResolver());
+
+        dataProvider.storeOrUpdateKeyValue(account.name, PREF__FOLDER_SORT_ORDER + "_" + type, sortOrder.name);
     }
 
     /**
@@ -251,19 +328,42 @@ public abstract class PreferenceManager {
         if (account == null) {
             return defaultValue;
         }
-        
+
         ArbitraryDataProvider dataProvider = new ArbitraryDataProvider(context.getContentResolver());
         FileDataStorageManager storageManager = ((ComponentsGetter)context).getStorageManager();
 
         if (storageManager == null) {
             storageManager = new FileDataStorageManager(account, context.getContentResolver());
         }
-        
+
         String value = dataProvider.getValue(account.name, getKeyFromFolder(preferenceName, folder));
         while (folder != null && value.isEmpty()) {
             folder = storageManager.getFileById(folder.getParentId());
             value = dataProvider.getValue(account.name, getKeyFromFolder(preferenceName, folder));
         }
+        return value.isEmpty() ? defaultValue : value;
+    }
+
+    /**
+     * Get preference value for a view.
+     *
+     * @param context        Context object.
+     * @param preferenceName Name of the preference to lookup.
+     * @param type           view which view
+     * @param defaultValue   Fallback value in case nothing is set.
+     * @return Preference value
+     */
+    public static String getTypePreference(Context context, String preferenceName, String type, String defaultValue) {
+        Account account = AccountUtils.getCurrentOwnCloudAccount(context);
+
+        if (account == null) {
+            return defaultValue;
+        }
+
+        ArbitraryDataProvider dataProvider = new ArbitraryDataProvider(context.getContentResolver());
+
+        String value = dataProvider.getValue(account.name, preferenceName + "_" + type);
+
         return value.isEmpty() ? defaultValue : value;
     }
 
@@ -284,7 +384,7 @@ public abstract class PreferenceManager {
     private static String getKeyFromFolder(String preferenceName, OCFile folder) {
         final String folderIdString = String.valueOf(folder != null ? folder.getFileId() :
                 FileDataStorageManager.ROOT_PARENT_ID);
-        
+
         return preferenceName + "_" + folderIdString;
     }
 
@@ -413,6 +513,34 @@ public abstract class PreferenceManager {
         saveFloatPreference(context, AUTO_PREF__GRID_COLUMNS, gridColumns);
     }
 
+    /**
+     * Gets the last seen version code right before updating.
+     *
+     * @param context Caller {@link Context}, used to access to shared preferences manager.
+     * @return grid columns     grid columns
+     */
+    public static int getLastSeenVersionCode(Context context) {
+        return getDefaultSharedPreferences(context).getInt(AUTO_PREF__LAST_SEEN_VERSION_CODE, 0);
+    }
+
+    /**
+     * Saves the version code as the last seen version code.
+     *
+     * @param context   Caller {@link Context}, used to access to shared preferences manager.
+     * @param versionCode the app's version code
+     */
+    public static void setLastSeenVersionCode(Context context, int versionCode) {
+        saveIntPreference(context, AUTO_PREF__LAST_SEEN_VERSION_CODE, versionCode);
+    }
+
+    public static long getLockTimestamp(Context context) {
+        return getDefaultSharedPreferences(context).getLong(PREF__LOCK_TIMESTAMP, 0);
+    }
+
+    public static void setLockTimestamp(Context context, long timestamp) {
+        saveLongPreference(context, PREF__LOCK_TIMESTAMP, timestamp);
+    }
+
     private static void saveBooleanPreference(Context context, String key, boolean value) {
         SharedPreferences.Editor appPreferences = getDefaultSharedPreferences(context.getApplicationContext()).edit();
         appPreferences.putBoolean(key, value).apply();
@@ -437,6 +565,11 @@ public abstract class PreferenceManager {
     private static void saveFloatPreference(Context context, String key, float value) {
         SharedPreferences.Editor appPreferences = getDefaultSharedPreferences(context.getApplicationContext()).edit();
         appPreferences.putFloat(key, value).apply();
+    }
+
+    private static void saveLongPreference(Context context, String key, long value) {
+        SharedPreferences.Editor appPreferences = getDefaultSharedPreferences(context.getApplicationContext()).edit();
+        appPreferences.putLong(key, value).apply();
     }
 
     public static SharedPreferences getDefaultSharedPreferences(Context context) {

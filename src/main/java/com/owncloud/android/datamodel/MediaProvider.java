@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
 /**
  * Media queries to gain access to media lists for the device.
  */
-public class MediaProvider {
+public final class MediaProvider {
     private static final String TAG = MediaProvider.class.getSimpleName();
 
     // fixed query parameters
@@ -58,6 +58,10 @@ public class MediaProvider {
     private static final String[] VIDEOS_FOLDER_PROJECTION = {"Distinct " + MediaStore.Video.Media.BUCKET_ID,
             MediaStore.Video.Media.BUCKET_DISPLAY_NAME};
 
+    private MediaProvider() {
+        // utility class -> private constructor
+    }
+
     /**
      * Getting All Images Paths.
      *
@@ -66,14 +70,14 @@ public class MediaProvider {
      * @return list with media folders
      */
     public static List<MediaFolder> getImageFolders(ContentResolver contentResolver, int itemLimit,
-                                                    @Nullable final Activity activity) {
+                                                    @Nullable final Activity activity, boolean getWithoutActivity) {
         // check permissions
         checkPermissions(activity);
 
         // query media/image folders
         Cursor cursorFolders = null;
-        if (activity != null && PermissionUtil.checkSelfPermission(activity.getApplicationContext(),
-                Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+        if ((activity != null && PermissionUtil.checkSelfPermission(activity.getApplicationContext(),
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)) || getWithoutActivity) {
             cursorFolders = contentResolver.query(IMAGES_MEDIA_URI, IMAGES_FOLDER_PROJECTION, null, null,
                     IMAGES_FOLDER_SORT_ORDER);
         }
@@ -115,9 +119,9 @@ public class MediaProvider {
                                 MediaStore.MediaColumns.DATA));
 
                         // check if valid path
-                        if (filePath != null && filePath.lastIndexOf("/") > 0) {
+                        if (filePath != null && filePath.lastIndexOf('/') > 0) {
                             mediaFolder.filePaths.add(filePath);
-                            mediaFolder.absolutePath = filePath.substring(0, filePath.lastIndexOf("/"));
+                            mediaFolder.absolutePath = filePath.substring(0, filePath.lastIndexOf('/'));
                         }
                     }
                     cursorImages.close();
@@ -171,14 +175,14 @@ public class MediaProvider {
     }
 
     public static List<MediaFolder> getVideoFolders(ContentResolver contentResolver, int itemLimit,
-                                                    @Nullable final Activity activity) {
+                                                    @Nullable final Activity activity, boolean getWithoutActivity) {
         // check permissions
         checkPermissions(activity);
 
         // query media/image folders
         Cursor cursorFolders = null;
-        if (activity != null && PermissionUtil.checkSelfPermission(activity.getApplicationContext(),
-                Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+        if ((activity != null && PermissionUtil.checkSelfPermission(activity.getApplicationContext(),
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)) || getWithoutActivity) {
             cursorFolders = contentResolver.query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, VIDEOS_FOLDER_PROJECTION,
                     null, null, null);
         } 
@@ -219,7 +223,7 @@ public class MediaProvider {
 
                         if (filePath != null) {
                             mediaFolder.filePaths.add(filePath);
-                            mediaFolder.absolutePath = filePath.substring(0, filePath.lastIndexOf("/"));
+                            mediaFolder.absolutePath = filePath.substring(0, filePath.lastIndexOf('/'));
                         }
                     }
                     cursorVideos.close();

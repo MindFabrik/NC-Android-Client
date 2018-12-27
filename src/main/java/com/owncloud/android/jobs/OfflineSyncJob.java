@@ -49,6 +49,7 @@ import java.util.Set;
 public class OfflineSyncJob extends Job {
     public static final String TAG = "OfflineSyncJob";
 
+    private static final String WAKELOCK_TAG_SEPARATION = ":";
     private List<OfflineFile> offlineFileList = new ArrayList<>();
 
     @NonNull
@@ -69,8 +70,9 @@ public class OfflineSyncJob extends Job {
 
             if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
                 PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-                wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
-                wakeLock.acquire();
+                wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, MainApp.getAuthority() +
+                        WAKELOCK_TAG_SEPARATION + TAG);
+                wakeLock.acquire(10 * 60 * 1000);
             }
 
             Cursor cursorOnKeptInSync = context.getContentResolver().query(
@@ -84,16 +86,16 @@ public class OfflineSyncJob extends Job {
             if (cursorOnKeptInSync != null) {
                 if (cursorOnKeptInSync.moveToFirst()) {
 
-                    String localPath = "";
-                    String accountName = "";
-                    Account account = null;
+                    String localPath;
+                    String accountName;
+                    Account account;
                     do {
                         localPath = cursorOnKeptInSync.getString(cursorOnKeptInSync
                                 .getColumnIndex(ProviderMeta.ProviderTableMeta.FILE_STORAGE_PATH));
                         accountName = cursorOnKeptInSync.getString(cursorOnKeptInSync
                                 .getColumnIndex(ProviderMeta.ProviderTableMeta.FILE_ACCOUNT_OWNER));
 
-                        account = new Account(accountName, MainApp.getAccountType());
+                        account = new Account(accountName, MainApp.getAccountType(getContext()));
                         if (!AccountUtils.exists(account, context) || localPath == null || localPath.length() <= 0) {
                             continue;
                         }

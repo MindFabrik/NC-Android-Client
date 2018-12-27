@@ -48,9 +48,11 @@ import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AlertDialog.Builder;
+import android.support.v7.widget.SearchView;
 import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -96,6 +98,7 @@ import com.owncloud.android.utils.DataHolderUtil;
 import com.owncloud.android.utils.DisplayUtils;
 import com.owncloud.android.utils.ErrorMessageAdapter;
 import com.owncloud.android.utils.FileSortOrder;
+import com.owncloud.android.utils.MimeType;
 import com.owncloud.android.utils.ThemeUtils;
 
 import java.io.File;
@@ -112,9 +115,6 @@ import java.util.List;
 import java.util.Stack;
 import java.util.Vector;
 
-import static com.owncloud.android.db.PreferenceManager.getSortOrder;
-
-
 /**
  * This can be used to upload things to an ownCloud instance.
  */
@@ -129,22 +129,23 @@ public class ReceiveExternalFilesActivity extends FileActivity
     public static final String URL_FILE_SUFFIX = ".url";
     public static final String WEBLOC_FILE_SUFFIX = ".webloc";
     public static final String DESKTOP_FILE_SUFFIX = ".desktop";
+    public static final int SINGLE_PARENT = 1;
 
     private AccountManager mAccountManager;
     private Stack<String> mParents = new Stack<>();
-    private ArrayList<Parcelable> mStreamsToUpload;
+    private List<Parcelable> mStreamsToUpload;
     private String mUploadPath;
     private OCFile mFile;
 
     private SyncBroadcastReceiver mSyncBroadcastReceiver;
-    private boolean mSyncInProgress = false;
+    private boolean mSyncInProgress;
 
     private final static int REQUEST_CODE__SETUP_ACCOUNT = REQUEST_CODE__LAST_SHARED + 1;
 
     private final static String KEY_PARENTS = "PARENTS";
     private final static String KEY_FILE = "FILE";
 
-    private boolean mUploadFromTmpFile = false;
+    private boolean mUploadFromTmpFile;
     private String mSubjectText;
     private String mExtraText;
 
@@ -166,9 +167,10 @@ public class ReceiveExternalFilesActivity extends FileActivity
             if (parentPath != null) {
                 mParents.addAll(Arrays.asList(parentPath.split("/")));
             }
-            
+
             mFile = savedInstanceState.getParcelable(KEY_FILE);
         }
+        mAccountManager = (AccountManager) getSystemService(Context.ACCOUNT_SERVICE);
 
         super.onCreate(savedInstanceState);
 
@@ -192,9 +194,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
 
     @Override
     protected void setAccount(Account account, boolean savedAccount) {
-        mAccountManager = (AccountManager) getSystemService(Context.ACCOUNT_SERVICE);
-
-        Account[] accounts = mAccountManager.getAccountsByType(MainApp.getAccountType());
+        Account[] accounts = mAccountManager.getAccountsByType(MainApp.getAccountType(this));
         if (accounts.length == 0) {
             Log_OC.i(TAG, "No ownCloud account is available");
             DialogNoAccount dialog = new DialogNoAccount();
@@ -261,7 +261,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
             AlertDialog.Builder builder = new Builder(getActivity());
             builder.setIcon(R.drawable.ic_warning);
             builder.setTitle(R.string.uploader_wrn_no_account_title);
-            builder.setMessage(String.format(getString(R.string.uploader_wrn_no_account_text), 
+            builder.setMessage(String.format(getString(R.string.uploader_wrn_no_account_text),
                     getString(R.string.app_name)));
             builder.setCancelable(false);
             builder.setPositiveButton(R.string.uploader_wrn_no_account_setup_btn_text, (dialog, which) -> {
@@ -289,9 +289,8 @@ public class ReceiveExternalFilesActivity extends FileActivity
             final ReceiveExternalFilesActivity parent = (ReceiveExternalFilesActivity) getActivity();
             AlertDialog.Builder builder = new Builder(parent);
 
-            mTintedCheck = DrawableCompat.wrap(ContextCompat.getDrawable(parent,
-                    R.drawable.ic_account_circle_white_18dp));
-            int tint = ThemeUtils.primaryColor();
+            mTintedCheck = DrawableCompat.wrap(ContextCompat.getDrawable(parent, R.drawable.account_circle_white));
+            int tint = ThemeUtils.primaryColor(getContext());
             DrawableCompat.setTint(mTintedCheck, tint);
 
             mAccountListAdapter = new AccountListAdapter(parent, getAccountListItems(parent), mTintedCheck);
@@ -299,7 +298,8 @@ public class ReceiveExternalFilesActivity extends FileActivity
             builder.setTitle(R.string.common_choose_account);
             builder.setAdapter(mAccountListAdapter, (dialog, which) -> {
                 final ReceiveExternalFilesActivity parent1 = (ReceiveExternalFilesActivity) getActivity();
-                parent1.setAccount(parent1.mAccountManager.getAccountsByType(MainApp.getAccountType())[which], false);
+                parent1.setAccount(parent1.mAccountManager.getAccountsByType(
+                        MainApp.getAccountType(getActivity()))[which], false);
                 parent1.onAccountSet(parent1.mAccountWasRestored);
                 dialog.dismiss();
             });
@@ -312,9 +312,9 @@ public class ReceiveExternalFilesActivity extends FileActivity
          *
          * @return list of account list items
          */
-        private ArrayList<AccountListItem> getAccountListItems(ReceiveExternalFilesActivity activity) {
-            Account[] accountList = activity.mAccountManager.getAccountsByType(MainApp.getAccountType());
-            ArrayList<AccountListItem> adapterAccountList = new ArrayList<>(accountList.length);
+        private List<AccountListItem> getAccountListItems(ReceiveExternalFilesActivity activity) {
+            Account[] accountList = activity.mAccountManager.getAccountsByType(MainApp.getAccountType(getActivity()));
+            List<AccountListItem> adapterAccountList = new ArrayList<>(accountList.length);
             for (Account account : accountList) {
                 adapterAccountList.add(new AccountListItem(account));
             }
@@ -329,6 +329,8 @@ public class ReceiveExternalFilesActivity extends FileActivity
 
         private static final int CATEGORY_URL = 1;
         private static final int CATEGORY_MAPS_URL = 2;
+        private static final int EXTRA_TEXT_LENGTH = 3;
+        private static final int SINGLE_SPINNER_ENTRY = 1;
 
         private List<String> mFilenameBase;
         private List<String> mFilenameSuffix;
@@ -353,14 +355,22 @@ public class ReceiveExternalFilesActivity extends FileActivity
             mFilenameSuffix = new ArrayList<>();
             mText = new ArrayList<>();
 
-            String subjectText = getArguments().getString(KEY_SUBJECT_TEXT);
-            String extraText = getArguments().getString(KEY_EXTRA_TEXT);
+            String subjectText = "";
+            String extraText = "";
+            if (getArguments() != null) {
+                if (getArguments().getString(KEY_SUBJECT_TEXT) != null) {
+                    subjectText = getArguments().getString(KEY_SUBJECT_TEXT);
+                }
+                if (getArguments().getString(KEY_EXTRA_TEXT) != null) {
+                    extraText = getArguments().getString(KEY_EXTRA_TEXT);
+                }
+            }
 
-            LayoutInflater layout = LayoutInflater.from(getActivity().getBaseContext());
+            LayoutInflater layout = LayoutInflater.from(requireContext());
             View view = layout.inflate(R.layout.upload_file_dialog, null);
 
             ArrayAdapter<String> adapter
-                    = new ArrayAdapter<>(getActivity().getBaseContext(), android.R.layout.simple_spinner_item);
+                    = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
             int selectPos = 0;
@@ -391,7 +401,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
 
                 selectPos = PreferenceManager.getUploadUrlFileExtensionUrlSelectedPos(getActivity());
                 mFileCategory = CATEGORY_URL;
-            } else if (extraText != null && isIntentFromGoogleMap(subjectText, extraText)) {
+            } else if (isIntentFromGoogleMap(subjectText, extraText)) {
                 String str = getString(R.string.upload_file_dialog_filetype_googlemap_shortcut);
                 String texts[] = extraText.split("\n");
                 mText.add(internetShortcutUrlText(texts[2]));
@@ -419,9 +429,8 @@ public class ReceiveExternalFilesActivity extends FileActivity
 
             final Spinner spinner = view.findViewById(R.id.file_type);
             setupSpinner(adapter, selectPos, userInput, spinner);
-            if (adapter.getCount() == 1) {
-                TextView label = view.findViewById(R.id.label_file_type);
-                label.setVisibility(View.GONE);
+            if (adapter.getCount() == SINGLE_SPINNER_ENTRY) {
+                view.findViewById(R.id.label_file_type).setVisibility(View.GONE);
                 spinner.setVisibility(View.GONE);
             }
             mSpinner = spinner;
@@ -454,7 +463,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
 
         @NonNull
         private Dialog createFilenameDialog(View view, final EditText userInput, final Spinner spinner) {
-            Builder builder = new Builder(getActivity());
+            Builder builder = new Builder(requireActivity());
             builder.setView(view);
             builder.setTitle(R.string.upload_file_dialog_title);
             builder.setPositiveButton(R.string.common_ok, (dialog, id) -> {
@@ -516,8 +525,8 @@ public class ReceiveExternalFilesActivity extends FileActivity
             String filename = mFilenameBase.get(selectPos) + mFilenameSuffix.get(selectPos);
             inputText.setText(filename);
             int selectionStart = 0;
-            int extensionStart = filename.lastIndexOf(".");
-            int selectionEnd = (extensionStart >= 0) ? extensionStart : filename.length();
+            int extensionStart = filename.lastIndexOf('.');
+            int selectionEnd = extensionStart >= 0 ? extensionStart : filename.length();
             if (selectionEnd >= 0) {
                 inputText.setSelection(
                         Math.min(selectionStart, selectionEnd),
@@ -527,15 +536,19 @@ public class ReceiveExternalFilesActivity extends FileActivity
 
         private boolean isIntentFromGoogleMap(String subjectText, String extraText) {
             String texts[] = extraText.split("\n");
-            if (texts.length != 3)
+            if (texts.length != EXTRA_TEXT_LENGTH) {
                 return false;
-            if (texts[0].length() == 0 || !subjectText.equals(texts[0]))
+            }
+
+            if (texts[0].length() == 0 || !subjectText.equals(texts[0])) {
                 return false;
+            }
+
             return texts[2].startsWith("https://goo.gl/maps/");
         }
 
         private boolean isIntentStartWithUrl(String extraText) {
-            return (extraText.startsWith("http://") || extraText.startsWith("https://"));
+            return extraText.startsWith("http://") || extraText.startsWith("https://");
         }
 
         @Nullable
@@ -614,7 +627,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
 
     @Override
     public void onBackPressed() {
-        if (mParents.size() <= 1) {
+        if (mParents.size() <= SINGLE_PARENT) {
             super.onBackPressed();
         } else {
             mParents.pop();
@@ -631,13 +644,13 @@ public class ReceiveExternalFilesActivity extends FileActivity
         List<OCFile> tmpFiles = getStorageManager().getFolderContent(mFile, false);
         tmpFiles = sortFileList(tmpFiles);
 
-        if (tmpFiles.size() <= 0) {
+        if (tmpFiles.isEmpty()) {
             return;
         }
         // filter on dirtype
         Vector<OCFile> files = new Vector<>();
         files.addAll(tmpFiles);
-        
+
         if (files.size() < position) {
             throw new IndexOutOfBoundsException("Incorrect item selected");
         }
@@ -719,13 +732,13 @@ public class ReceiveExternalFilesActivity extends FileActivity
         ListView mListView = findViewById(android.R.id.list);
 
         String current_dir = mParents.peek();
-        boolean notRoot = (mParents.size() > 1);
+        boolean notRoot = mParents.size() > 1;
 
         if (actionBar != null) {
             if ("".equals(current_dir)) {
-                actionBar.setTitle(getString(R.string.uploader_top_message));
+                ThemeUtils.setColoredTitle(actionBar, R.string.uploader_top_message, this);
             } else {
-                actionBar.setTitle(current_dir);
+                ThemeUtils.setColoredTitle(actionBar, current_dir, this);
             }
 
             actionBar.setDisplayHomeAsUpEnabled(notRoot);
@@ -740,7 +753,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
         if (mFile != null) {
             List<OCFile> files = getStorageManager().getFolderContent(mFile, false);
 
-            if (files.size() == 0) {
+            if (files.isEmpty()) {
                 setMessageForEmptyList(R.string.file_list_empty_headline, R.string.empty,
                         R.drawable.ic_list_empty_upload);
             } else {
@@ -766,17 +779,24 @@ public class ReceiveExternalFilesActivity extends FileActivity
             }
             Button btnChooseFolder = findViewById(R.id.uploader_choose_folder);
                 btnChooseFolder.setOnClickListener(this);
-                btnChooseFolder.getBackground().setColorFilter(ThemeUtils.primaryColor(getAccount()),
+            btnChooseFolder.getBackground().setColorFilter(ThemeUtils.primaryColor(getAccount(), true, this),
                         PorterDuff.Mode.SRC_ATOP);
+            btnChooseFolder.setTextColor(ThemeUtils.fontColor(this));
 
             if (getSupportActionBar() != null) {
                 getSupportActionBar().setBackgroundDrawable(new ColorDrawable(
-                        ThemeUtils.primaryColor(getAccount())));
+                        ThemeUtils.primaryColor(getAccount(), false, this)));
             }
 
-                ThemeUtils.colorStatusBar(this, ThemeUtils.primaryDarkColor(getAccount()));
+            ThemeUtils.colorStatusBar(this, ThemeUtils.primaryDarkColor(getAccount(), this));
 
-                ThemeUtils.colorToolbarProgressBar(this, ThemeUtils.primaryColor(getAccount()));
+            ThemeUtils.colorToolbarProgressBar(this, ThemeUtils.primaryColor(getAccount(), false, this));
+
+            Drawable backArrow = getResources().getDrawable(R.drawable.ic_arrow_back);
+
+            if (actionBar != null) {
+                actionBar.setHomeAsUpIndicator(ThemeUtils.tintDrawable(backArrow, ThemeUtils.fontColor(this)));
+            }
 
             Button btnNewFolder = findViewById(R.id.uploader_cancel);
                 btnNewFolder.setOnClickListener(this);
@@ -791,7 +811,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
         mEmptyListHeadline = findViewById(R.id.empty_list_view_headline);
         mEmptyListIcon = findViewById(R.id.empty_list_icon);
         mEmptyListProgress = findViewById(R.id.empty_list_progress);
-        mEmptyListProgress.getIndeterminateDrawable().setColorFilter(ThemeUtils.primaryColor(),
+        mEmptyListProgress.getIndeterminateDrawable().setColorFilter(ThemeUtils.primaryColor(this),
                 PorterDuff.Mode.SRC_IN);
     }
 
@@ -802,7 +822,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
                 mEmptyListHeadline.setText(headline);
                 mEmptyListMessage.setText(message);
 
-                mEmptyListIcon.setImageDrawable(ThemeUtils.tintDrawable(icon, ThemeUtils.primaryColor()));
+                mEmptyListIcon.setImageDrawable(ThemeUtils.tintDrawable(icon, ThemeUtils.primaryColor(this, true)));
 
                 mEmptyListIcon.setVisibility(View.VISIBLE);
                 mEmptyListProgress.setVisibility(View.GONE);
@@ -826,7 +846,6 @@ public class ReceiveExternalFilesActivity extends FileActivity
                                                                         currentSyncTime,
                                                                         false,
                                                                         false,
-                                                                        false,
                                                                         getStorageManager(),
                                                                         getAccount(),
                                                                         getApplicationContext()
@@ -835,7 +854,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
     }
 
     private List<OCFile> sortFileList(List<OCFile> files) {
-        FileSortOrder sortOrder = getSortOrder(this, mFile);
+        FileSortOrder sortOrder = PreferenceManager.getSortOrderByFolder(this, mFile);
         return sortOrder.sortCloudFiles(files);
     }
 
@@ -858,15 +877,14 @@ public class ReceiveExternalFilesActivity extends FileActivity
             mStreamsToUpload = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
         }
 
-        if (mStreamsToUpload == null || mStreamsToUpload.size() == 0 ||
-                mStreamsToUpload.get(0) == null) {
+        if (mStreamsToUpload == null || mStreamsToUpload.isEmpty() || mStreamsToUpload.get(0) == null) {
             mStreamsToUpload = null;
             saveTextsFromIntent(intent);
         }
     }
 
     private void saveTextsFromIntent(Intent intent) {
-        if (!"text/plain".equals(intent.getType())) {
+        if (!MimeType.TEXT_PLAIN.equals(intent.getType())) {
             return;
         }
         mUploadFromTmpFile = true;
@@ -1010,7 +1028,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
     }
 
     private boolean isHaveMultipleAccount() {
-        return mAccountManager.getAccountsByType(MainApp.getAccountType()).length > 1;
+        return mAccountManager.getAccountsByType(MainApp.getAccountType(this)).length > 1;
     }
 
     @Override
@@ -1022,6 +1040,20 @@ public class ReceiveExternalFilesActivity extends FileActivity
             MenuItem switchAccountMenu = menu.findItem(R.id.action_switch_account);
             switchAccountMenu.setVisible(false);
         }
+
+        // tint search event
+        final MenuItem item = menu.findItem(R.id.action_search);
+        SearchView searchView = (SearchView) MenuItemCompat.getActionView(item);
+
+        // hacky as no default way is provided
+        int fontColor = ThemeUtils.fontColor(this);
+        EditText editText = searchView.findViewById(android.support.v7.appcompat.R.id.search_src_text);
+        editText.setHintTextColor(fontColor);
+        editText.setTextColor(fontColor);
+        ImageView searchClose = searchView.findViewById(android.support.v7.appcompat.R.id.search_close_btn);
+        searchClose.setColorFilter(ThemeUtils.fontColor(this));
+        ImageView searchButton = searchView.findViewById(android.support.v7.appcompat.R.id.search_button);
+        searchButton.setColorFilter(ThemeUtils.fontColor(this));
 
         return true;
     }
@@ -1035,7 +1067,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
                 dialog.show(getSupportFragmentManager(), CreateFolderDialogFragment.CREATE_FOLDER_FRAGMENT);
                 break;
             case android.R.id.home:
-                if ((mParents.size() > 1)) {
+                if (mParents.size() > SINGLE_PARENT) {
                     onBackPressed();
                 }
                 break;
@@ -1044,7 +1076,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
                 break;
             case R.id.action_sort:
                 SortingOrderDialogFragment mSortingOrderDialogFragment = SortingOrderDialogFragment.newInstance(
-                        getSortOrder(this, mFile));
+                    PreferenceManager.getSortOrderByFolder(this, mFile));
                 mSortingOrderDialogFragment.show(getSupportFragmentManager(),
                         SortingOrderDialogFragment.SORTING_ORDER_FRAGMENT);
                 break;
@@ -1087,8 +1119,8 @@ public class ReceiveExternalFilesActivity extends FileActivity
                 String syncFolderRemotePath = intent.getStringExtra(FileSyncAdapter.EXTRA_FOLDER_PATH);
                 RemoteOperationResult syncResult = (RemoteOperationResult)
                         DataHolderUtil.getInstance().retrieve(intent.getStringExtra(FileSyncAdapter.EXTRA_RESULT));
-                boolean sameAccount = (getAccount() != null &&
-                        accountName.equals(getAccount().name) && getStorageManager() != null);
+                boolean sameAccount = getAccount() != null && accountName.equals(getAccount().name)
+                        && getStorageManager() != null;
 
                 if (sameAccount) {
 
@@ -1122,13 +1154,12 @@ public class ReceiveExternalFilesActivity extends FileActivity
                             mFile = currentFile;
                         }
 
-                        mSyncInProgress = (!FileSyncAdapter.EVENT_FULL_SYNC_END.equals(event) &&
-                                !RefreshFolderOperation.EVENT_SINGLE_FOLDER_SHARES_SYNCED.equals(event));
+                        mSyncInProgress = !FileSyncAdapter.EVENT_FULL_SYNC_END.equals(event) &&
+                                !RefreshFolderOperation.EVENT_SINGLE_FOLDER_SHARES_SYNCED.equals(event);
 
-                        if (RefreshFolderOperation.EVENT_SINGLE_FOLDER_CONTENTS_SYNCED.
-                                equals(event) &&
+                        if (RefreshFolderOperation.EVENT_SINGLE_FOLDER_CONTENTS_SYNCED.equals(event)
                                 /// TODO refactor and make common
-                                syncResult != null && !syncResult.isSuccess()) {
+                                && syncResult != null && !syncResult.isSuccess()) {
 
                             if (syncResult.getCode() == ResultCode.UNAUTHORIZED ||
                                     (syncResult.isException() && syncResult.getException()

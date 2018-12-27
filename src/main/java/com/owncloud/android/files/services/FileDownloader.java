@@ -91,13 +91,13 @@ public class FileDownloader extends Service
     private Looper mServiceLooper;
     private ServiceHandler mServiceHandler;
     private IBinder mBinder;
-    private OwnCloudClient mDownloadClient = null;
-    private Account mCurrentAccount = null;
+    private OwnCloudClient mDownloadClient;
+    private Account mCurrentAccount;
     private FileDataStorageManager mStorageManager;
 
-    private IndexedForest<DownloadFileOperation> mPendingDownloads = new IndexedForest<DownloadFileOperation>();
+    private IndexedForest<DownloadFileOperation> mPendingDownloads = new IndexedForest<>();
 
-    private DownloadFileOperation mCurrentDownload = null;
+    private DownloadFileOperation mCurrentDownload;
 
     private NotificationManager mNotificationManager;
     private NotificationCompat.Builder mNotificationBuilder;
@@ -127,13 +127,18 @@ public class FileDownloader extends Service
         mServiceHandler = new ServiceHandler(mServiceLooper, this);
         mBinder = new FileDownloaderBinder();
 
-        mNotification = new NotificationCompat.Builder(this).setContentTitle(getApplicationContext().
-                getResources().getString(R.string.app_name))
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this).setContentTitle(
+                getApplicationContext().getResources().getString(R.string.app_name))
                 .setContentText(getApplicationContext().getResources().getString(R.string.foreground_service_download))
                 .setSmallIcon(R.drawable.notification_icon)
                 .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.notification_icon))
-                .setColor(ThemeUtils.primaryColor())
-                .build();
+                .setColor(ThemeUtils.primaryColor(getApplicationContext(), true));
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            builder.setChannelId(NotificationUtils.NOTIFICATION_CHANNEL_DOWNLOAD);
+        }
+
+        mNotification = builder.build();
 
         // add AccountsUpdatedListener
         AccountManager am = AccountManager.get(getApplicationContext());
@@ -173,9 +178,7 @@ public class FileDownloader extends Service
 
         startForeground(FOREGROUND_SERVICE_ID, mNotification);
 
-        if (!intent.hasExtra(EXTRA_ACCOUNT) ||
-                !intent.hasExtra(EXTRA_FILE)
-                ) {
+        if (intent == null || !intent.hasExtra(EXTRA_ACCOUNT) || !intent.hasExtra(EXTRA_FILE)) {
             Log_OC.e(TAG, "Not enough information provided in intent");
             return START_NOT_STICKY;
         } else {
@@ -218,11 +221,11 @@ public class FileDownloader extends Service
     /**
      * Provides a binder object that clients can use to perform operations on the queue of downloads,
      * excepting the addition of new files.
-     * <p/>
+     *
      * Implemented to perform cancellation, pause and resume of existing downloads.
      */
     @Override
-    public IBinder onBind(Intent arg0) {
+    public IBinder onBind(Intent intent) {
         return mBinder;
     }
 
@@ -318,10 +321,7 @@ public class FileDownloader extends Service
          * @param file    A file that could be in the queue of downloads.
          */
         public boolean isDownloading(Account account, OCFile file) {
-            if (account == null || file == null) {
-                return false;
-            }
-            return (mPendingDownloads.contains(account.name, file.getRemotePath()));
+            return account != null && file != null && mPendingDownloads.contains(account.name, file.getRemotePath());
         }
 
 
@@ -492,13 +492,13 @@ public class FileDownloader extends Service
         long syncDate = System.currentTimeMillis();
         file.setLastSyncDateForProperties(syncDate);
         file.setLastSyncDateForData(syncDate);
-        file.setNeedsUpdateThumbnail(true);
+        file.setUpdateThumbnailNeeded(true);
         file.setModificationTimestamp(mCurrentDownload.getModificationTimestamp());
         file.setModificationTimestampAtLastSyncForData(mCurrentDownload.getModificationTimestamp());
         file.setEtag(mCurrentDownload.getEtag());
-        file.setMimetype(mCurrentDownload.getMimeType());
+        file.setMimeType(mCurrentDownload.getMimeType());
         file.setStoragePath(mCurrentDownload.getSavePath());
-        file.setFileLength((new File(mCurrentDownload.getSavePath()).length()));
+        file.setFileLength(new File(mCurrentDownload.getSavePath()).length());
         file.setRemoteId(mCurrentDownload.getFile().getRemoteId());
         mStorageManager.saveFile(file);
         FileDataStorageManager.triggerMediaScan(file.getStoragePath());
@@ -525,10 +525,10 @@ public class FileDownloader extends Service
                                 new File(download.getSavePath()).getName())
                 );
 
-        if ((android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             mNotificationBuilder.setChannelId(NotificationUtils.NOTIFICATION_CHANNEL_DOWNLOAD);
         }
-        
+
         /// includes a pending intent in the notification showing the details view of the file
         Intent showDetailsIntent = null;
         if (PreviewImageFragment.canBePreviewed(download.getFile())) {
@@ -569,7 +569,7 @@ public class FileDownloader extends Service
             if (mNotificationManager == null) {
                 mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             }
-            
+
             if (mNotificationManager != null) {
                 mNotificationManager.notify(R.string.downloader_download_in_progress_ticker,
                         mNotificationBuilder.build());
@@ -594,12 +594,13 @@ public class FileDownloader extends Service
         if (mNotificationManager != null) {
             mNotificationManager.cancel(R.string.downloader_download_in_progress_ticker);
         }
-        if (!downloadResult.isCancelled()) {
-            int tickerId = (downloadResult.isSuccess()) ? R.string.downloader_download_succeeded_ticker :
-                    R.string.downloader_download_failed_ticker;
 
-            boolean needsToUpdateCredentials = (ResultCode.UNAUTHORIZED.equals(downloadResult.getCode()));
-            tickerId = (needsToUpdateCredentials) ?
+        if (!downloadResult.isCancelled()) {
+            int tickerId = downloadResult.isSuccess() ?
+                    R.string.downloader_download_succeeded_ticker : R.string.downloader_download_failed_ticker;
+
+            boolean needsToUpdateCredentials = ResultCode.UNAUTHORIZED.equals(downloadResult.getCode());
+            tickerId = needsToUpdateCredentials ?
                     R.string.downloader_download_failed_credentials_error : tickerId;
 
             mNotificationBuilder
@@ -610,20 +611,8 @@ public class FileDownloader extends Service
                     .setProgress(0, 0, false);
 
             if (needsToUpdateCredentials) {
+                configureUpdateCredentialsNotification(download.getAccount());
 
-                // let the user update credentials with one click
-                Intent updateAccountCredentials = new Intent(this, AuthenticatorActivity.class);
-                updateAccountCredentials.putExtra(AuthenticatorActivity.EXTRA_ACCOUNT,
-                        download.getAccount());
-                updateAccountCredentials.putExtra(
-                        AuthenticatorActivity.EXTRA_ACTION,
-                        AuthenticatorActivity.ACTION_UPDATE_EXPIRED_TOKEN
-                );
-                updateAccountCredentials.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                updateAccountCredentials.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
-                updateAccountCredentials.addFlags(Intent.FLAG_FROM_BACKGROUND);
-                mNotificationBuilder.setContentIntent(PendingIntent.getActivity(this, (int) System.currentTimeMillis(),
-                        updateAccountCredentials, PendingIntent.FLAG_ONE_SHOT));
             } else {
                 // TODO put something smart in showDetailsIntent
                 Intent showDetailsIntent = new Intent();
@@ -645,6 +634,21 @@ public class FileDownloader extends Service
                 }
             }
         }
+    }
+
+    private void configureUpdateCredentialsNotification(Account account) {
+        // let the user update credentials with one click
+        Intent updateAccountCredentials = new Intent(this, AuthenticatorActivity.class);
+        updateAccountCredentials.putExtra(AuthenticatorActivity.EXTRA_ACCOUNT, account);
+        updateAccountCredentials.putExtra(
+                AuthenticatorActivity.EXTRA_ACTION,
+                AuthenticatorActivity.ACTION_UPDATE_EXPIRED_TOKEN
+        );
+        updateAccountCredentials.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        updateAccountCredentials.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+        updateAccountCredentials.addFlags(Intent.FLAG_FROM_BACKGROUND);
+        mNotificationBuilder.setContentIntent(PendingIntent.getActivity(this, (int) System.currentTimeMillis(),
+                updateAccountCredentials, PendingIntent.FLAG_ONE_SHOT));
     }
 
 

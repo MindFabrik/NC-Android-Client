@@ -1,7 +1,7 @@
-# MindFabrik Branch of [Nextcloud](https://nextcloud.com) Android app based on v 3.1
+# MindFabrik Branch of [Nextcloud](https://nextcloud.com) Android app based on v 3.4
 
 This branch of Nextcloud offers some improvments in the customization:
-1. Force PIN or Finger Print to secure access
+1. Force PIN or Finger Print to secure access incl. Device Code Support
 2. Remove Share Options
 
 We highlighted our modifications with the remark "Change-MindFabrik" in the code

@@ -24,8 +24,6 @@
     <color name="list_item_lastmod_and_filesize_text">@color/secondaryTextColor</color>
     <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
-    <color name="fab_white">#fafafa</color>
-    <color name="black_semi_transparent">#B2000000</color>
     <color name="textColor">@color/black</color>
     <color name="disabled_text">#ff888888</color>
     <color name="list_divider_background">#eee</color>
@@ -43,8 +41,6 @@
     <!-- standard material color definitions -->
 
     <!-- level colors for info notifications/visualisations -->
-    <color name="infolevel_info">@color/color_accent</color>
-    <color name="infolevel_warning">#fdd835</color>
-    <color name="infolevel_critical">#e57373</color>
+    <color name="infolevel_warning">#e9322d</color>
 
 </resources>

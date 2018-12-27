@@ -1,4 +1,4 @@
-/**
+/*
  *   ownCloud Android client application
  *
  *   @author David A. Velasco
@@ -22,117 +22,116 @@ package com.owncloud.android.authentication;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.PowerManager;
-import android.preference.PreferenceManager;
+import android.view.Window;
 import android.view.WindowManager;
 
 import com.owncloud.android.MainApp;
-import com.owncloud.android.ui.activity.FingerprintActivity;
+import com.owncloud.android.db.PreferenceManager;
 import com.owncloud.android.ui.activity.PassCodeActivity;
 import com.owncloud.android.ui.activity.Preferences;
+import com.owncloud.android.ui.activity.RequestCredentialsActivity;
+import com.owncloud.android.utils.DeviceCredentialUtils;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class PassCodeManager {
+public final class PassCodeManager {
 
-    private static final Set<Class> sExemptOfPasscodeActivites;
+    private static final Set<Class> exemptOfPasscodeActivities;
+
+    public static final int PASSCODE_ACTIVITY = 9999;
 
     static {
-        sExemptOfPasscodeActivites = new HashSet<Class>();
-        sExemptOfPasscodeActivites.add(PassCodeActivity.class);
-        sExemptOfPasscodeActivites.add(FingerprintActivity.class);
+        exemptOfPasscodeActivities = new HashSet<>();
+        exemptOfPasscodeActivities.add(PassCodeActivity.class);
+        exemptOfPasscodeActivities.add(RequestCredentialsActivity.class);
         // other activities may be exempted, if needed
     }
 
-    private static final int PASS_CODE_TIMEOUT = 1000;
+    private static final int PASS_CODE_TIMEOUT = 5000;
         // keeping a "low" positive value is the easiest way to prevent the pass code is requested on rotations
 
-    public static PassCodeManager mPassCodeManagerInstance = null;
+    private static PassCodeManager passCodeManagerInstance;
 
-    private Long mTimestamp = 0l;
-    private int mVisibleActivitiesCounter = 0;
+    private int visibleActivitiesCounter;
 
     public static PassCodeManager getPassCodeManager() {
-        if (mPassCodeManagerInstance == null) {
-            mPassCodeManagerInstance = new PassCodeManager();
+        if (passCodeManagerInstance == null) {
+            passCodeManagerInstance = new PassCodeManager();
         }
-        return mPassCodeManagerInstance;
+        return passCodeManagerInstance;
     }
 
-    protected PassCodeManager() {}
+    private PassCodeManager() {}
 
     public void onActivityCreated(Activity activity) {
-        if (passCodeIsEnabled() || fingerprintIsEnabled()) {
-            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
-        } else {
-            activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        Window window = activity.getWindow();
+        if (window != null) {
+            if (passCodeIsEnabled() || deviceCredentialsAreEnabled(activity)) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+            }
         }
     }
 
     public void onActivityStarted(Activity activity) {
-        if (!sExemptOfPasscodeActivites.contains(activity.getClass()) && passCodeShouldBeRequested()) {
+        Long timestamp = PreferenceManager.getLockTimestamp(activity);
+        if (!exemptOfPasscodeActivities.contains(activity.getClass()) && passCodeShouldBeRequested(timestamp)) {
 
             Intent i = new Intent(MainApp.getAppContext(), PassCodeActivity.class);
             i.setAction(PassCodeActivity.ACTION_CHECK);
             i.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            activity.startActivity(i);
+            activity.startActivityForResult(i, PASSCODE_ACTIVITY);
         }
 
-        if (!sExemptOfPasscodeActivites.contains(activity.getClass()) &&
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                fingerprintShouldBeRequested() && FingerprintActivity.isFingerprintReady(MainApp.getAppContext())) {
-
-            Intent i = new Intent(MainApp.getAppContext(), FingerprintActivity.class);
-            i.setAction(PassCodeActivity.ACTION_CHECK);
+        if (!exemptOfPasscodeActivities.contains(activity.getClass()) &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && deviceCredentialsShouldBeRequested(timestamp, activity)) {
+            Intent i = new Intent(MainApp.getAppContext(), RequestCredentialsActivity.class);
             i.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            activity.startActivity(i);
+            activity.startActivityForResult(i, PASSCODE_ACTIVITY);
         }
 
-        mVisibleActivitiesCounter++;    // keep it AFTER passCodeShouldBeRequested was checked
+        visibleActivitiesCounter++;    // keep it AFTER passCodeShouldBeRequested was checked
     }
 
     public void onActivityStopped(Activity activity) {
-        if (mVisibleActivitiesCounter > 0) {
-            mVisibleActivitiesCounter--;
+        if (visibleActivitiesCounter > 0) {
+            visibleActivitiesCounter--;
         }
-        setUnlockTimestamp();
+        setUnlockTimestamp(activity);
         PowerManager powerMgr = (PowerManager) activity.getSystemService(Context.POWER_SERVICE);
-        if ((passCodeIsEnabled() || fingerprintIsEnabled())&& powerMgr != null && !powerMgr.isScreenOn()) {
+        if ((passCodeIsEnabled() || deviceCredentialsAreEnabled(activity)) && powerMgr != null
+                && !powerMgr.isScreenOn()) {
             activity.moveTaskToBack(true);
         }
     }
 
-    private void setUnlockTimestamp() {
-        mTimestamp = System.currentTimeMillis();
+    private void setUnlockTimestamp(Activity activity) {
+        Long timestamp = System.currentTimeMillis();
+        PreferenceManager.setLockTimestamp(activity, timestamp);
     }
 
-    private boolean passCodeShouldBeRequested(){
-        if ((System.currentTimeMillis() - mTimestamp) > PASS_CODE_TIMEOUT &&
-                mVisibleActivitiesCounter <= 0
-                ){
-            return passCodeIsEnabled();
-        }
-        return false;
+    private boolean passCodeShouldBeRequested(Long timestamp) {
+        return (System.currentTimeMillis() - timestamp) > PASS_CODE_TIMEOUT &&
+            visibleActivitiesCounter <= 0 && passCodeIsEnabled();
     }
 
     private boolean passCodeIsEnabled() {
-        SharedPreferences appPrefs = PreferenceManager.getDefaultSharedPreferences(MainApp.getAppContext());
-        return (appPrefs.getBoolean(PassCodeActivity.PREFERENCE_SET_PASSCODE, false));
+        return PreferenceManager.getLockPreference(MainApp.getAppContext()).equals(Preferences.LOCK_PASSCODE);
     }
 
-    private boolean fingerprintShouldBeRequested() {
-        if ((System.currentTimeMillis() - mTimestamp) > PASS_CODE_TIMEOUT && mVisibleActivitiesCounter <= 0) {
-            return fingerprintIsEnabled();
-        }
-        return false;
+    private boolean deviceCredentialsShouldBeRequested(Long timestamp, Activity activity) {
+        return (System.currentTimeMillis() - timestamp) > PASS_CODE_TIMEOUT && visibleActivitiesCounter <= 0 &&
+            deviceCredentialsAreEnabled(activity);
     }
 
-    private boolean fingerprintIsEnabled() {
-        SharedPreferences appPrefs = PreferenceManager.getDefaultSharedPreferences(MainApp.getAppContext());
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                appPrefs.getBoolean(Preferences.PREFERENCE_USE_FINGERPRINT, false);
+    private boolean deviceCredentialsAreEnabled(Activity activity) {
+        return PreferenceManager.getLockPreference(MainApp.getAppContext()).equals(Preferences.LOCK_DEVICE_CREDENTIALS)
+                || Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                        (PreferenceManager.isUseFingerprint(MainApp.getAppContext())
+                                && DeviceCredentialUtils.areCredentialsAvailable(activity));
     }
 }
